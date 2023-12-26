@@ -1,6 +1,9 @@
 using RestaurantApi.Repository;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
+using RestaurantApi.Services.Interface;
+using RestaurantApi.Services;
+using RestaurantApi.Repository.Interface;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,6 +21,12 @@ builder.Services.AddMvc()
             //ignoreCircle
             o.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
         });
+
+
+builder.Services.AddScoped<IReservaService, ReservaService>();
+builder.Services.AddScoped<IReservaRepository, ReservaRepository>();
+
+
 
 // Db connection
 string connectionString = builder.Configuration.GetConnectionString("Default");
