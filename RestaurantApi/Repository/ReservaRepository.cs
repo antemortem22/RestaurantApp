@@ -35,26 +35,32 @@ namespace RestaurantApi.Repository
             newReserva.FechaAlta = DateTime.Now;
             newReserva.FechaModificacion = DateTime.Now;
 
-            //Restar a los cupos por turno
-            var rangoReserva = await _restaurantContext.RangoReservas.FindAsync(reserva.IdRangoReserva);
-
-            /*if (rangoReserva != null)
+            //Aca no se si queres validar la reserva de otra forma
+            //Puse un if por ahora para comprobar si funcionaba
+            if (ValidacionesReserva(newReserva, _restaurantContext))
             {
-                // Restar la cantidad de personas del cupo
-                rangoReserva.Cupo -= reserva.CantidadPersonas;
+                //Restar a los cupos por turno
+                var rangoReserva = await _restaurantContext.RangoReservas.FindAsync(reserva.IdRangoReserva);
 
-                // Guardar los cambios en la base de datos
-                await _restaurantContext.SaveChangesAsync();
-            }*/
+                if (rangoReserva != null)
+                {
+                    // Restar la cantidad de personas del cupo
+                    rangoReserva.Cupo -= reserva.CantidadPersonas;
+
+                    // Guardar los cambios en la base de datos
+                    await _restaurantContext.SaveChangesAsync();
+                }
 
 
-            reserva.Estado.ToUpper();
+                reserva.Estado.ToUpper();
 
-            await _restaurantContext.Reservas.AddAsync(newReserva);
+                await _restaurantContext.Reservas.AddAsync(newReserva);
 
-            int rows = await _restaurantContext.SaveChangesAsync();
+                int rows = await _restaurantContext.SaveChangesAsync();
 
-            return rows > 0;
+                return rows > 0;
+            }
+            return false;
         }
 
         public async Task<List<Reserva>> GetAllConfirmadasAsync()
@@ -71,6 +77,58 @@ namespace RestaurantApi.Repository
                                       .ToListAsync();
         }
 
+        //Validaciones de la reserva, me falta mejorar el codigo un toque mas.
+        //Esta maso pero de momento funciona.
 
+        public bool ValidacionesReserva(Reserva reserva, ReservaRestaurantContext contextrestaurant)
+        {
+            if (ValidCampos(reserva)
+                && (ValidFecha(reserva) || ValidCantReserva(reserva, contextrestaurant))
+                && (ValidCantCapacidad(reserva, contextrestaurant)))
+            {
+                return true;
+            }
+            return false;
+        }
+
+        public bool ValidCampos(Reserva reserva)
+        {
+            if (ValidNull(reserva.NombrePersona) || ValidNull(reserva.ApellidoPersona)
+                || ValidNull(reserva.Dni) || ValidNull(reserva.Mail) || ValidNull(reserva.Celular))
+            {
+                return false;
+            }
+            return true;
+        }
+
+        public bool ValidNull(string valores)
+        {
+            return string.IsNullOrWhiteSpace(valores);
+        }
+
+        public bool ValidFecha(Reserva reserva)
+        {
+            var FechaActual = DateTime.Today;
+            var FechaReserva = reserva.FechaReserva.AddDays(-7);
+
+            if (FechaActual == FechaReserva || FechaActual > FechaReserva) return true;
+            return false;
+        }
+
+        public bool ValidCantCapacidad(Reserva reserva, ReservaRestaurantContext reservacontext)
+        {
+            var cantconfirm = 100 - (reservacontext.Reservas
+                .Where(p => p.FechaReserva == reserva.FechaReserva && p.Estado.ToLower() == "confirmado")
+                .Count());
+            return cantconfirm > reserva.CantidadPersonas && reserva.CantidadPersonas > 0;
+        }
+
+        public bool ValidCantReserva(Reserva reserva, ReservaRestaurantContext reservacontext)
+        {
+            var Valor = reservacontext.Reservas
+                .Where(p => p.NombrePersona == reserva.NombrePersona
+                && p.ApellidoPersona == reserva.ApellidoPersona).Count();
+            return Valor < 1;
+        }
     }
 }
