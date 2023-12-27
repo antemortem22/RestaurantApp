@@ -25,6 +25,8 @@ builder.Services.AddMvc()
 
 builder.Services.AddScoped<IReservaService, ReservaService>();
 builder.Services.AddScoped<IReservaRepository, ReservaRepository>();
+builder.Services.AddScoped<ICalendarioSemanalRepository, CalendarioSemanalRepository>();
+builder.Services.AddScoped<ICalendarioSemanalService, CalendarioSemanalService>();
 
 
 

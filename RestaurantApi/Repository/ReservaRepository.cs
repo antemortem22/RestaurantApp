@@ -1,10 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 using RestaurantApi.Domain.DTO;
 using RestaurantApi.Domain.Entities;
 using RestaurantApi.Repository.Interface;
-using System.Globalization;
-using System.Threading;
+
 
 namespace RestaurantApi.Repository
 {
@@ -40,14 +38,14 @@ namespace RestaurantApi.Repository
             //Restar a los cupos por turno
             var rangoReserva = await _restaurantContext.RangoReservas.FindAsync(reserva.IdRangoReserva);
 
-            if (rangoReserva != null)
+            /*if (rangoReserva != null)
             {
                 // Restar la cantidad de personas del cupo
                 rangoReserva.Cupo -= reserva.CantidadPersonas;
 
                 // Guardar los cambios en la base de datos
                 await _restaurantContext.SaveChangesAsync();
-            }
+            }*/
 
 
             reserva.Estado.ToUpper();
