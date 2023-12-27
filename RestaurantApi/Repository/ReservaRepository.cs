@@ -57,20 +57,5 @@ namespace RestaurantApi.Repository
             return rows > 0;
         }
 
-        public async Task<List<Reserva>> GetAllConfirmadasAsync()
-        {
-            return await _restaurantContext.Reservas
-                                      .Where(r => r.Estado == "CONFIRMADO")
-                                      .ToListAsync();
-        }
-
-        public async Task<List<Reserva>> GetAllCanceladasAsync()
-        {
-            return await _restaurantContext.Reservas
-                                      .Where(r => r.Estado == "CANCELADO")
-                                      .ToListAsync();
-        }
-
-
     }
 }

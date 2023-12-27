@@ -7,8 +7,5 @@ namespace RestaurantApi.Services.Interface
     {
         public Task<bool> AddReservaAsync(ReservaDTO reserva);
 
-        public Task<List<Reserva>> GetConfirmadasAsync();
-
-        public Task<List<Reserva>> GetCanceladasAsync();
     }
 }
