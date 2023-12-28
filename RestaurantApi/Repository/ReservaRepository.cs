@@ -10,12 +10,15 @@ namespace RestaurantApi.Repository
     {
         private readonly ReservaRestaurantContext _restaurantContext;
 
+        private ValidacionClasePrueba Validacion;
+
         public ReservaRepository(ReservaRestaurantContext context)
         {
             _restaurantContext = context;
+            Validacion = new ValidacionClasePrueba();
         }
 
-        public async Task<bool> AddNewReservaAsync(ReservaDTO reserva)
+        public async Task<Respuesta> AddNewReservaAsync(ReservaDTO reserva)
         {
             // Generación de código único para la reserva
             Guid id = Guid.NewGuid();
@@ -32,42 +35,104 @@ namespace RestaurantApi.Repository
                 CantidadPersonas = reserva.CantidadPersonas,
                 FechaReserva = reserva.FechaReserva,
                 FechaAlta = DateTime.Now,
-                FechaModificacion = DateTime.Now
+                FechaModificacion = DateTime.Now,
+                Estado = ""
             };
 
-            // Validar si hay cupo disponible para la fecha y el rango de reserva
-            var rangoReserva = await _restaurantContext.RangoReservas
-                .Where(rr => rr.IdRangoReserva == reserva.IdRangoReserva)
-                .FirstOrDefaultAsync();
+            #region Codigo Agos
+            //// Validar si hay cupo disponible para la fecha y el rango de reserva
+            //var rangoReserva = await _restaurantContext.RangoReservas
+            //    .Where(rr => rr.IdRangoReserva == reserva.IdRangoReserva)
+            //    .FirstOrDefaultAsync();
 
-            if (rangoReserva != null)
+            //if (rangoReserva != null)
+            //{
+            //    var reservasEnFecha = await _restaurantContext.Reservas
+            //        .Where(r => r.IdRangoReserva == reserva.IdRangoReserva && r.FechaReserva.Date == reserva.FechaReserva.Date)
+            //        .SumAsync(r => r.CantidadPersonas);
+
+            //    int cupoDisponible = rangoReserva.Cupo - reservasEnFecha - reserva.CantidadPersonas;
+
+            //    if (cupoDisponible < 0)
+            //    {
+            //        // No hay suficiente cupo disponible para la reserva en esa fecha y rango
+            //        return false;
+            //    }
+            //}
+            #endregion
+
+            var ValidacionReserva = await Validacion.ValidacionReservaAsync(newReserva, _restaurantContext);
+
+            if (ValidacionReserva.Estado)
             {
-                var reservasEnFecha = await _restaurantContext.Reservas
-                    .Where(r => r.IdRangoReserva == reserva.IdRangoReserva && r.FechaReserva.Date == reserva.FechaReserva.Date)
-                    .SumAsync(r => r.CantidadPersonas);
+                newReserva.Estado = "CONFIRMADO";
+                await _restaurantContext.Reservas.AddAsync(newReserva);
 
-                int cupoDisponible = rangoReserva.Cupo - reservasEnFecha - reserva.CantidadPersonas;
+                int rows = await _restaurantContext.SaveChangesAsync();
 
-                if (cupoDisponible < 0)
+                if(rows > 0)
                 {
-                    // No hay suficiente cupo disponible para la reserva en esa fecha y rango
-                    return false;
+                    //La reserva se realizo
+                    return ValidacionReserva;
                 }
+                ValidacionReserva.Estado = false;
+                ValidacionReserva.Mensaje.Clear().Append("Error en la api no se agrego la reserva.");
             }
-            else
-            {
-                // El ID de rango de reserva proporcionado no es válido
-                return false;
-            }
-
-            
-            await _restaurantContext.Reservas.AddAsync(newReserva);
-
-            int rows = await _restaurantContext.SaveChangesAsync();
-
-            return rows > 0;
+            //La reserva no se realizo por falta de
+            //cumplir una validacion
+            return ValidacionReserva;
         }
 
+        public async Task<Respuesta> ModificarNewReservaAsync(ModificacionDTO modificacion)
+        {
+            var ReservaModificar = await _restaurantContext.Reservas.
+                FirstOrDefaultAsync(r => r.CodReserva == modificacion.CodReserva);
 
+            ReservaModificar.FechaReserva = modificacion.FechaReserva;
+            ReservaModificar.IdRangoReserva = modificacion.IdRangoReserva;
+            ReservaModificar.CantidadPersonas = modificacion.CantidadPersonas;
+            ReservaModificar.FechaModificacion = DateTime.Now;
+
+            var ValidacionModificacion = await Validacion.
+                ModificacionReservaAsync(ReservaModificar, _restaurantContext);
+
+            if (ValidacionModificacion.Estado)
+            {
+
+                await _restaurantContext.SaveChangesAsync();
+
+                //La modificacion se realizo
+                return ValidacionModificacion;
+            }
+            //La modificacion no se realizo por falta de
+            //cumplir una validacion
+            return ValidacionModificacion;
+        }
+
+        public async Task<Respuesta> CancelarNewReservaAsync(string id)
+        {
+            //Se bussca reserva para cancelar
+            var ReservaCancelar = await _restaurantContext.Reservas.
+                FirstOrDefaultAsync(r => r.CodReserva == id && 
+                r.Estado == "CONFIRMADO");
+
+            Respuesta respuesta = new Respuesta();
+
+            if(ReservaCancelar != null)
+            {
+                ReservaCancelar.Estado = "CANCELADO";
+
+                await _restaurantContext.SaveChangesAsync();
+
+                respuesta.Estado = true;
+                respuesta.Mensaje.Clear();
+                respuesta.Mensaje.Append("Se modifico la reserva.");
+                return respuesta;
+            }
+            //No se encontro la reserva en la bdd
+            respuesta.Estado = false;
+            respuesta.Mensaje.Append("No se encontró la reserva.");
+            return respuesta;
+        }
     }
 }

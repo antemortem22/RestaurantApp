@@ -6,6 +6,8 @@ namespace RestaurantApi.Repository.Interface
 {
     public interface IReservaRepository
     {
-        public Task<bool> AddNewReservaAsync(ReservaDTO reserva);
+        public Task<Respuesta> AddNewReservaAsync(ReservaDTO reserva);
+        public Task<Respuesta> ModificarNewReservaAsync(ModificacionDTO modificacion);
+        public Task<Respuesta> CancelarNewReservaAsync(string id);
     }
 }
