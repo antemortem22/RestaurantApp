@@ -1,0 +1,11 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\RestaurantApp",
+    "\\RestaurantApp\\RestaurantApi",
+    "\\RestaurantApp\\RestaurantApi\\Domain",
+    "\\RestaurantApp\\RestaurantApi\\Domain\\Models"
+  ],
+  "SelectedNode": "\\RestaurantApp\\RestaurantApi\\Domain\\Models\\ListarModels.cs",
+  "PreviewInSolutionExplorer": false
+}
