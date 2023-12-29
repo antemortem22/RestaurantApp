@@ -30,9 +30,9 @@ namespace RestaurantApi.Services
             return result;
         }
 
-        public async Task<Respuesta> CancelarReservaAsync(string id)
+        public async Task<Respuesta> CancelarReservaAsync(CancelarDTO cancelar)
         {
-            var result = await _repository.CancelarNewReservaAsync(id);
+            var result = await _repository.CancelarNewReservaAsync(cancelar);
 
             return result;
         }

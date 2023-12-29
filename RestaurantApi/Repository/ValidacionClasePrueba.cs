@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using RestaurantApi.Domain.DTO;
 using RestaurantApi.Domain.Entities;
 using System.Text;
 
@@ -131,7 +132,7 @@ namespace RestaurantApi.Repository
                     return respuesta.Estado = true;
                 }
                 //No hay cantidad disponible en el rango
-                respuesta.Mensaje.Append($"\n no hay cantidad disponible en el rango, " +
+                respuesta.Mensaje.Append($"\nno hay cantidad disponible en el rango, " +
                     $"capacidad disponible: {CapacidadRango - ReservasEnFecha}.");
                 return respuesta.Estado = false;
             }

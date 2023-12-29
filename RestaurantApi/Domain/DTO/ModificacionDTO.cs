@@ -2,10 +2,12 @@
 {
     public class ModificacionDTO
     {
-        public string CodReserva { get; set; }
+        public string Dni { get; set; }
         public DateTime FechaReserva { get; set; }
         public int IdRangoReserva { get; set; }
-        public int CantidadPersonas { get; set; }
+        public DateTime? FechaModificacion { get; set; }
+        public int IdRangoModificacion { get; set; }
+        public int CantidadPersonasModificacion { get; set; }
 
     }
 }
