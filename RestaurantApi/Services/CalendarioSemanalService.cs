@@ -1,4 +1,5 @@
-﻿using RestaurantApi.Repository.Interface;
+﻿using RestaurantApi.Domain.Models;
+using RestaurantApi.Repository.Interface;
 using RestaurantApi.Services.Interface;
 
 namespace RestaurantApi.Services
@@ -12,7 +13,7 @@ namespace RestaurantApi.Services
             _repository = repository;
         }
 
-        public async Task<List<CalendarioInfo>> GetSemanaAsync()
+        public async Task<List<CalendarioResponse>> GetSemanaAsync()
         {
             var result = await _repository.GetCalendarioSemanalAsync();
 
@@ -30,13 +31,13 @@ namespace RestaurantApi.Services
 
             return result;
         }
-        public async Task<List<RangoReservaInfo>> GetSinCupoAsync() 
+        public async Task<List<ListaTurnoInfo>> GetSinCupoAsync() 
         {
             var result = await _repository.GetTurnosSinCupoAsync();
 
             return result;
         }
-        public async Task<List<CalendarioInfo>> GetDisponiblesPorFechaAsync()
+        public async Task<List<ListaTurnoInfo>> GetDisponiblesPorFechaAsync()
         {
             var result = await _repository.GetTurnosDisponiblesPorFechaAsync();
 

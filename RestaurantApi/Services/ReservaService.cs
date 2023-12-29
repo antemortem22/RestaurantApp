@@ -1,5 +1,6 @@
 ﻿using RestaurantApi.Domain.DTO;
 using RestaurantApi.Domain.Entities;
+using RestaurantApi.Repository;
 using RestaurantApi.Repository.Interface;
 using RestaurantApi.Services.Interface;
 
@@ -15,23 +16,25 @@ namespace RestaurantApi.Services
             _repository = repository;
         }
 
-        public async Task<bool> AddReservaAsync(ReservaDTO reserva)
+        public async Task<Respuesta> AddReservaAsync(ReservaDTO reserva)
         {
             var result = await _repository.AddNewReservaAsync(reserva);
 
             return result;
         }
 
-        public async Task<List<Reserva>> GetConfirmadasAsync()
+        public async Task<Respuesta> ModificarReservaAsync(ModificacionDTO modificacion)
         {
-            var result = await _repository.GetAllConfirmadasAsync();
-            return result;
-        }
-        public async Task<List<Reserva>> GetCanceladasAsync()
-        {
-            var result = await _repository.GetAllCanceladasAsync();
+            var result = await _repository.ModificarNewReservaAsync(modificacion);
+
             return result;
         }
 
+        public async Task<Respuesta> CancelarReservaAsync(string id)
+        {
+            var result = await _repository.CancelarNewReservaAsync(id);
+
+            return result;
+        }
     }
 }

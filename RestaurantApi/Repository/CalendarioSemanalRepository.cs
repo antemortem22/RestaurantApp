@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using RestaurantApi.Domain.Models;
 using RestaurantApi.Repository.Interface;
 using System.Globalization;
 
@@ -13,7 +14,59 @@ namespace RestaurantApi.Repository
             _restaurantContext = context;
         }
 
-        public async Task<List<CalendarioInfo>> GetCalendarioSemanalAsync()
+        public async Task<List<CalendarioResponse>> GetCalendarioSemanalAsync()
+        {
+            var fechasProximos7Dias = await ObtenerFechasProximosDiasAsync(7);
+
+            var calendario = new List<CalendarioReserva>();
+
+            foreach (var fecha in fechasProximos7Dias)
+            {
+                var diaSemana = fecha.ToString("dddd", CultureInfo.CurrentCulture);
+
+                var turnosPorFecha = await _restaurantContext.RangoReservas
+                            .Select(r => new
+                            {
+                                Mensaje = "Calendario:",
+                                r.Descripcion,
+                                CupoTotal = r.Cupo,
+                                ReservasOcupadas = r.Reservas
+                                    .Where(reserva => reserva.FechaReserva.Date == fecha.Date)
+                                    .Sum(reserva => reserva.CantidadPersonas)
+                            })
+                            .ToListAsync();
+
+                var calendarioReserva = new CalendarioReserva
+                {
+                    Fecha = fecha.ToString("yyyy-MM-dd"),
+                    Dia = diaSemana,
+                    Rangos = turnosPorFecha
+                        .Select(turno => new RangoReservaCalendario
+                        {
+                            Rango = $"{turno.Descripcion} ({turno.ReservasOcupadas}/{turno.CupoTotal})",
+                            Reserva = new ReservaCalendario
+                            {
+                                Ocupados = turno.ReservasOcupadas,
+                                Libres = Math.Max(0, turno.CupoTotal - turno.ReservasOcupadas),
+                                TotalCupos = turno.CupoTotal
+                            }
+                        })
+                        .ToList()
+                };
+
+                calendario.Add(calendarioReserva);
+            }
+
+            var calendarioResponse = new CalendarioResponse
+            {
+                Calendarios = calendario
+            };
+
+            return new List<CalendarioResponse> { calendarioResponse };
+        }
+
+
+        public async Task<List<CalendarioInfo>> GetCanceladosSemanalAsync()
         {
             var fechasProximos7Dias = await ObtenerFechasProximosDiasAsync(7);
 
@@ -21,117 +74,105 @@ namespace RestaurantApi.Repository
 
             foreach (var fecha in fechasProximos7Dias)
             {
-                //obtiene el actual dia de la semana
                 var diaSemana = fecha.ToString("dddd", CultureInfo.CurrentCulture);
 
-                var infoDia = new CalendarioInfo
-                {
-                    Fecha = fecha.ToString("yyyy-MM-dd"),
-                    Dia = diaSemana,
-                    Rangos = await ObtenerInfoRangosAsync(fecha)
-                };
+                var turnosCanceladosPorFecha = await _restaurantContext.RangoReservas
+                    .SelectMany(r => r.Reservas
+                        .Where(reserva => reserva.FechaReserva.Date == fecha.Date && reserva.Estado == "CANCELADO")
+                        .Select(reserva => new
+                        {
+                            r.Descripcion,
+                            reserva.NombrePersona,
+                            reserva.ApellidoPersona,
+                            reserva.Estado
+                        })
+                    )
+                    .ToListAsync();
 
-                calendario.Add(infoDia);
+                if (turnosCanceladosPorFecha.Any())
+                {
+                    var calendarioInfo = new CalendarioInfo
+                    {
+                        Fecha = fecha.ToString("yyyy-MM-dd"),
+                        Dia = diaSemana,
+                        Rangos = turnosCanceladosPorFecha
+                            .Select(turno => new RangoReservaInfo
+                            {
+                                Nombre = turno.NombrePersona,
+                                Apellido = turno.ApellidoPersona,
+                                Rango = turno.Descripcion,
+                                Estado = turno.Estado
+                            })
+                            .ToList()
+                    };
+
+                    calendario.Add(calendarioInfo);
+                }
             }
 
             return calendario;
-        }
-
-        public async Task<List<CalendarioInfo>> GetCanceladosSemanalAsync()
-        {
-            var fechasProximos7Dias = await ObtenerFechasProximosDiasAsync(7);
-
-            var turnosCancelados = await _restaurantContext.Reservas
-                .Where(r => r.Estado == "CANCELADO" && fechasProximos7Dias.Contains(r.FechaReserva.Date))
-                .GroupBy(r => new { r.FechaReserva.Date, r.IdRangoReserva })
-                .Select(group => new CalendarioInfo
-                {
-                    Fecha = group.Key.Date.ToString("yyyy-MM-dd"),
-                    Dia = group.Key.Date.ToString("dddd", CultureInfo.CurrentCulture),
-                    Rangos = group.Select(r => new RangoReservaInfo
-                    {
-                        Rango = r.IdRangoReservaNavigation.Descripcion,
-                        Cancelado = true,
-                        Confirmado = false
-                    }).ToList()
-                })
-                .ToListAsync();
-
-            return turnosCancelados;
         }
 
         public async Task<List<CalendarioInfo>> GetConfirmadosSemanalAsync()
         {
             var fechasProximos7Dias = await ObtenerFechasProximosDiasAsync(7);
 
-            var turnosConfirmados = await _restaurantContext.Reservas
-                .Where(r => r.Estado == "CONFIRMADO" && fechasProximos7Dias.Contains(r.FechaReserva.Date))
-                .GroupBy(r => new { r.FechaReserva.Date, r.IdRangoReserva })
-                .Select(group => new CalendarioInfo
-                {
-                    Fecha = group.Key.Date.ToString("yyyy-MM-dd"),
-                    Dia = group.Key.Date.ToString("dddd", CultureInfo.CurrentCulture),
-                    Rangos = group.Select(r => new RangoReservaInfo
-                    {
-                        Rango = r.IdRangoReservaNavigation.Descripcion,
-                        Cancelado = false,
-                        Confirmado = true
-                    }).ToList()
-                })
-                .ToListAsync();
-
-            return turnosConfirmados;
-        }
-
-        public async Task<List<RangoReservaInfo>> GetTurnosSinCupoAsync()
-        {
-            var fechasProximos7Dias = await ObtenerFechasProximosDiasAsync(7);
-
-            var turnosSinCupo = await _restaurantContext.RangoReservas
-                                    .Where(r => r.Reservas.Any() && r.Reservas.Sum(reserva => reserva.CantidadPersonas) == 0)
-                                    .Select(r => new RangoReservaInfo
-                                    {
-                                        IdRangoReserva = r.IdRangoReserva,
-                                        Rango = r.Descripcion, // Ajustar para reflejar la estructura de la base de datos
-                                    })
-                                    .ToListAsync();
-
+            var calendario = new List<CalendarioInfo>();
 
             foreach (var fecha in fechasProximos7Dias)
             {
-                var reservasPorFecha = _restaurantContext.Reservas
-                    .Where(r => r.FechaReserva.Date == fecha.Date && turnosSinCupo.Any(t => t.IdRangoReserva == r.IdRangoReserva))
-                    .GroupBy(r => r.IdRangoReserva)
-                    .ToDictionary(group => group.Key, group => group.Sum(r => r.CantidadPersonas));
+                var diaSemana = fecha.ToString("dddd", CultureInfo.CurrentCulture);
 
-                foreach (var turno in turnosSinCupo)
-                {
-                    if (reservasPorFecha.ContainsKey(turno.IdRangoReserva))
-                    {
-                        turno.Reserva = new ReservaInfo
+                var turnosConfirmadosPorFecha = await _restaurantContext.RangoReservas
+                    .SelectMany(r => r.Reservas
+                        .Where(reserva => reserva.FechaReserva.Date == fecha.Date && reserva.Estado == "CONFIRMADO")
+                        .Select(reserva => new
                         {
-                            Ocupados = reservasPorFecha[turno.IdRangoReserva],
-                            Fecha = fecha.ToString("yyyy-MM-dd"),
-                        };
-                    }
+                            r.Descripcion,
+                            reserva.NombrePersona,
+                            reserva.ApellidoPersona,
+                            reserva.Estado
+                        })
+                    )
+                    .ToListAsync();
+
+                if (turnosConfirmadosPorFecha.Any())
+                {
+                    var calendarioInfo = new CalendarioInfo
+                    {
+                        Fecha = fecha.ToString("yyyy-MM-dd"),
+                        Dia = diaSemana,
+                        Rangos = turnosConfirmadosPorFecha
+                            .Select(turno => new RangoReservaInfo
+                            {
+                                Nombre = turno.NombrePersona,
+                                Apellido = turno.ApellidoPersona,
+                                Rango = turno.Descripcion,
+                                Estado = turno.Estado
+                            })
+                            .ToList()
+                    };
+
+                    calendario.Add(calendarioInfo);
                 }
             }
 
-            return turnosSinCupo;
+            return calendario;
         }
 
-        public async Task<List<CalendarioInfo>> GetTurnosDisponiblesPorFechaAsync()
+
+        public async Task<List<ListaTurnoInfo>> GetTurnosSinCupoAsync()
         {
             var fechasProximos7Dias = await ObtenerFechasProximosDiasAsync(7);
 
-            var turnosDisponibles = new List<CalendarioInfo>();
+            var turnosSinCupo = new List<ListaTurnoInfo>();
 
             foreach (var fecha in fechasProximos7Dias)
             {
+                var diaSemana = fecha.ToString("dddd", CultureInfo.CurrentCulture);
                 var turnosPorFecha = await _restaurantContext.RangoReservas
                     .Select(r => new
                     {
-                        r.IdRangoReserva,
                         r.Descripcion,
                         CupoTotal = r.Cupo,
                         ReservasOcupadas = r.Reservas
@@ -140,29 +181,77 @@ namespace RestaurantApi.Repository
                     })
                     .ToListAsync();
 
-                var calendarioInfo = new CalendarioInfo
-                {
-                    Fecha = fecha.ToString("yyyy-MM-dd"),
-                    Dia = fecha.ToString("dddd", CultureInfo.CurrentCulture),
-                    Rangos = turnosPorFecha
-                        .Select(turno => new RangoReservaInfo
+                var turnosSinCupoPorFecha = turnosPorFecha
+                    .Where(turno => turno.ReservasOcupadas >= turno.CupoTotal)
+                    .Select(turno => new ListaTurnoInfo
+                    {
+                        Fecha = fecha.ToString("yyyy-MM-dd"),
+                        Dia = diaSemana,
+                        Rangos = new List<TurnoInfo>
                         {
-                            Rango = $"{turno.Descripcion} ({turno.ReservasOcupadas}/{turno.CupoTotal})",
-                            Reserva = new ReservaInfo
+                            new TurnoInfo
                             {
-                                
-                                Libres = Math.Max(0, turno.CupoTotal - turno.ReservasOcupadas),
-                                TotalCupos = turno.CupoTotal
+                                Rango = $"{turno.Descripcion} ({turno.ReservasOcupadas}/{turno.CupoTotal})"
                             }
-                        })
-                        .ToList()
-                };
+                        }
+                    })
+                    .ToList();
 
-                turnosDisponibles.Add(calendarioInfo);
+                if (turnosSinCupoPorFecha.Any())
+                {
+                    turnosSinCupo.AddRange(turnosSinCupoPorFecha);
+                }
+            }
+
+            return turnosSinCupo;
+        }
+
+        public async Task<List<ListaTurnoInfo>> GetTurnosDisponiblesPorFechaAsync()
+        {
+            var fechasProximos7Dias = await ObtenerFechasProximosDiasAsync(7);
+
+            var turnosDisponibles = new List<ListaTurnoInfo>();
+
+            foreach (var fecha in fechasProximos7Dias)
+            {
+                var diaSemana = fecha.ToString("dddd", CultureInfo.CurrentCulture);
+
+                var turnosPorFecha = await _restaurantContext.RangoReservas
+                    .Select(r => new
+                    {
+                        r.Descripcion,
+                        CupoTotal = r.Cupo,
+                        ReservasOcupadas = r.Reservas
+                            .Where(reserva => reserva.FechaReserva.Date == fecha.Date)
+                            .Sum(reserva => reserva.CantidadPersonas)
+                    })
+                    .ToListAsync();
+
+                var turnosDisponiblesPorFecha = turnosPorFecha
+                    .Where(turno => turno.ReservasOcupadas < turno.CupoTotal)
+                    .Select(turno => new ListaTurnoInfo
+                    {
+                        Fecha = fecha.ToString("yyyy-MM-dd"),
+                        Dia = diaSemana,
+                        Rangos = new List<TurnoInfo>
+                        {
+                            new TurnoInfo
+                            {
+                                Rango = $"{turno.Descripcion} ({turno.ReservasOcupadas}/{turno.CupoTotal})"
+                            }
+                        }
+                    })
+                    .ToList();
+
+                if (turnosDisponiblesPorFecha.Any())
+                {
+                    turnosDisponibles.AddRange(turnosDisponiblesPorFecha);
+                }
             }
 
             return turnosDisponibles;
         }
+
 
 
         /**********************************FUNCIONES*****************************/
@@ -176,32 +265,6 @@ namespace RestaurantApi.Repository
             });
         }
 
-        private async Task<List<RangoReservaInfo>> ObtenerInfoRangosAsync(DateTime fecha)
-        {
-            var rangos = await _restaurantContext.RangoReservas.ToListAsync();
-            var infoRangos = new List<RangoReservaInfo>();
-
-            foreach (var rango in rangos)
-            {
-                var reservasEnRango = await _restaurantContext.Reservas
-                    .Where(r => r.FechaReserva.Date == fecha.Date && r.IdRangoReserva == rango.IdRangoReserva)
-                    .ToListAsync();
-
-                var rangoInfo = new RangoReservaInfo
-                {
-                    Rango = rango.Descripcion,
-                    Reserva = new ReservaInfo
-                    {
-                        Ocupados = reservasEnRango.Count(r => r.Estado == "CONFIRMADO"),
-                        Libres = rango.Cupo - reservasEnRango.Count(r => r.Estado == "CONFIRMADO"),
-                        TotalCupos = rango.Cupo
-                    }
-                };
-
-                infoRangos.Add(rangoInfo);
-            }
-
-            return infoRangos;
-        }
+       
     }
 }
