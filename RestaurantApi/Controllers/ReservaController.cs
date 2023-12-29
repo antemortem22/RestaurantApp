@@ -35,9 +35,9 @@ namespace RestaurantApi.Controllers
         }
 
         [HttpPost("CancelarReserva")]
-        public async Task<IActionResult> CancelarReserva([FromQuery] string id)
+        public async Task<IActionResult> CancelarReserva([FromQuery] CancelarDTO request)
         {
-            var result = await _reservaService.CancelarReservaAsync(id);
+            var result = await _reservaService.CancelarReservaAsync(request);
             var mensaje = result.Mensaje.ToString();
             if (result.Estado) return Ok(mensaje);
             return BadRequest(mensaje);

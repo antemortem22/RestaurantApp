@@ -8,6 +8,6 @@ namespace RestaurantApi.Repository.Interface
     {
         public Task<Respuesta> AddNewReservaAsync(ReservaDTO reserva);
         public Task<Respuesta> ModificarNewReservaAsync(ModificacionDTO modificacion);
-        public Task<Respuesta> CancelarNewReservaAsync(string id);
+        public Task<Respuesta> CancelarNewReservaAsync(CancelarDTO cancelar);
     }
 }
