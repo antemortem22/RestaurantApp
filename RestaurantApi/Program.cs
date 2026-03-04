@@ -42,10 +42,15 @@ builder.Services.AddDbContext<ReservaRestaurantContext>(config =>
 //
 
 var app = builder.Build();
+if (app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+    var dbContext = scope.ServiceProvider.GetRequiredService<ReservaRestaurantContext>();
+    await SeedData.InitializeAsync(dbContext);
+}
 
-// Configure HTTP request pipeline
 
-    // also swagger confing inside http request
+
 app.UseSwagger();
 
 app.UseSwaggerUI();
