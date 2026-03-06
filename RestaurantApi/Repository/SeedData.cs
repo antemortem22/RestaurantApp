@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using RestaurantApi.Domain.Entities;
+using RestaurantApi.Domain.Constants;
 
 namespace RestaurantApi.Repository
 {
@@ -53,7 +54,7 @@ namespace RestaurantApi.Repository
                     for (int i = 0; i < 2; i++)
                     {
                         var idx = random.Next(nombres.Length);
-                        var estado = random.Next(100) < 80 ? "CONFIRMADO" : "CANCELADO";
+                        var estado = random.Next(100) < 80 ? ReservaEstado.Confirmado : ReservaEstado.Cancelado;
 
                         reservas.Add(new Reserva
                         {

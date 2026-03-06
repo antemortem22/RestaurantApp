@@ -2,6 +2,7 @@
 using RestaurantApi.Domain.DTO;
 using RestaurantApi.Domain.Entities;
 using RestaurantApi.Repository.Interface;
+using RestaurantApi.Domain.Constants; 
 using System.Text;
 
 
@@ -55,7 +56,7 @@ namespace RestaurantApi.Repository
 
             if (ValidacionReserva.Estado)
             {
-                newReserva.Estado = "CONFIRMADO";
+                newReserva.Estado = ReservaEstado.Confirmado;
                 await _restaurantContext.Reservas.AddAsync(newReserva);
 
                 int rows = await _restaurantContext.SaveChangesAsync();
@@ -132,13 +133,13 @@ namespace RestaurantApi.Repository
                 FirstOrDefaultAsync(r => r.Dni == cancelar.Dni 
                 && r.FechaReserva == cancelar.FechaReserva
                 && r.IdRangoReserva == cancelar.IdRangoReserva
-                && r.Estado == "CONFIRMADO");
+                && r.Estado == ReservaEstado.Confirmado);
 
             Respuesta respuesta = new Respuesta();
 
             if(ReservaCancelar != null)
             {
-                ReservaCancelar.Estado = "CANCELADO";
+                ReservaCancelar.Estado = ReservaEstado.Cancelado;
 
                 await _restaurantContext.SaveChangesAsync();
 

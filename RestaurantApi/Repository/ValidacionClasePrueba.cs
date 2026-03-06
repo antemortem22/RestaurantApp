@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using RestaurantApi.Domain.DTO;
 using RestaurantApi.Domain.Entities;
+using RestaurantApi.Domain.Constants;
 using System.Text;
 
 namespace RestaurantApi.Repository
@@ -120,7 +121,7 @@ namespace RestaurantApi.Repository
                 var ReservasEnFecha = await reservacontext.Reservas
                         .Where(r => r.IdRangoReserva == reserva.IdRangoReserva 
                                && r.FechaReserva.Date == reserva.FechaReserva.Date
-                               && r.Estado == "CONFIRMADO")
+                               && r.Estado == ReservaEstado.Confirmado)
                         .SumAsync(r => r.CantidadPersonas);
 
                 var ValidacionReserva = CapacidadRango - (ReservasEnFecha + reserva.CantidadPersonas);

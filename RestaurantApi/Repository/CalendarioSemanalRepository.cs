@@ -2,6 +2,7 @@
 using RestaurantApi.Domain.Models;
 using RestaurantApi.Repository.Interface;
 using System.Globalization;
+using RestaurantApi.Domain.Constants;
 
 namespace RestaurantApi.Repository
 {
@@ -78,7 +79,7 @@ namespace RestaurantApi.Repository
 
                 var turnosCanceladosPorFecha = await _restaurantContext.RangoReservas
                     .SelectMany(r => r.Reservas
-                        .Where(reserva => reserva.FechaReserva.Date == fecha.Date && reserva.Estado == "CANCELADO")
+                        .Where(reserva => reserva.FechaReserva.Date == fecha.Date && reserva.Estado == ReservaEstado.Cancelado)
                         .Select(reserva => new
                         {
                             r.Descripcion,
@@ -125,7 +126,7 @@ namespace RestaurantApi.Repository
 
                 var turnosConfirmadosPorFecha = await _restaurantContext.RangoReservas
                     .SelectMany(r => r.Reservas
-                        .Where(reserva => reserva.FechaReserva.Date == fecha.Date && reserva.Estado == "CONFIRMADO")
+                        .Where(reserva => reserva.FechaReserva.Date == fecha.Date && reserva.Estado == ReservaEstado.Confirmado)
                         .Select(reserva => new
                         {
                             r.Descripcion,

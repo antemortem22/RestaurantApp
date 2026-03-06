@@ -1,64 +1,47 @@
-using RestaurantApi.Repository;
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json.Serialization;
-using RestaurantApi.Services.Interface;
-using RestaurantApi.Services;
+using RestaurantApi.Repository;
 using RestaurantApi.Repository.Interface;
-
+using RestaurantApi.Services;
+using RestaurantApi.Services.Interface;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container
+builder.Services.AddControllers()
+    .AddJsonOptions(o =>
+    {
+        o.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+    });
 
-builder.Services.AddControllers();
-
-// Swagger config
+builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
-//System Text Json config
-builder.Services.AddMvc()
-        .AddJsonOptions(o => {
-            //ignoreCircle
-            o.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
-        });
-
 
 builder.Services.AddScoped<IReservaService, ReservaService>();
 builder.Services.AddScoped<IReservaRepository, ReservaRepository>();
-builder.Services.AddScoped<ICalendarioSemanalRepository, CalendarioSemanalRepository>();
 builder.Services.AddScoped<ICalendarioSemanalService, CalendarioSemanalService>();
+builder.Services.AddScoped<ICalendarioSemanalRepository, CalendarioSemanalRepository>();
 
+var connectionString = builder.Configuration.GetConnectionString("Default")
+    ?? throw new InvalidOperationException("Missing connection string: ConnectionStrings:Default");
 
-
-// Db connection
-string connectionString = builder.Configuration.GetConnectionString("Default");
-builder.Services.AddDbContext<ReservaRestaurantContext>(config =>
-{
-    config.UseSqlServer(connectionString);
-});
-
-
-
-//
+builder.Services.AddDbContext<ReservaRestaurantContext>(options =>
+    options.UseSqlServer(connectionString));
 
 var app = builder.Build();
-if (app.Environment.IsDevelopment())
+
+
+app.UseSwagger();
+app.UseSwaggerUI();
+
+// Seed automático (idempotente)
+using (var scope = app.Services.CreateScope())
 {
-    using var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<ReservaRestaurantContext>();
     await SeedData.InitializeAsync(dbContext);
 }
 
-
-
-app.UseSwagger();
-
-app.UseSwaggerUI();
-
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();
