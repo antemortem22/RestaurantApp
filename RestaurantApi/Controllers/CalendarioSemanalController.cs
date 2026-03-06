@@ -1,6 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using RestaurantApi.Domain.DTO;
-using RestaurantApi.Services;
 using RestaurantApi.Services.Interface;
 
 namespace RestaurantApi.Controllers
@@ -9,10 +7,11 @@ namespace RestaurantApi.Controllers
     [ApiController]
     public class CalendarioSemanalController : ControllerBase
     {
-        private ICalendarioSemanalService _calendarioService;
+        private readonly ICalendarioSemanalService _calendarioService;
+
         public CalendarioSemanalController(ICalendarioSemanalService calendarioService)
         {
-           _calendarioService = calendarioService;
+            _calendarioService = calendarioService;
         }
 
         [HttpGet("Calendario")]
@@ -39,8 +38,6 @@ namespace RestaurantApi.Controllers
         [HttpGet("SinCupo")]
         public async Task<IActionResult> SinCupo()
         {
-            //Este seguro te tira error
-            //Me falta agregar para que guarde reservas sin cupos
             var result = await _calendarioService.GetSinCupoAsync();
             return Ok(result);
         }
@@ -51,6 +48,6 @@ namespace RestaurantApi.Controllers
             var result = await _calendarioService.GetDisponiblesPorFechaAsync();
             return Ok(result);
         }
-
     }
 }
+

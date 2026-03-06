@@ -252,10 +252,7 @@ namespace RestaurantApi.Repository
 
             return turnosDisponibles;
         }
-
-
-
-        /**********************************FUNCIONES*****************************/
+        // Genera una ventana de fechas desde hoy para reutilizar en consultas semanales.
         private async Task<List<DateTime>> ObtenerFechasProximosDiasAsync(int dias)
         {
             return await Task.Run(() =>
@@ -269,3 +266,4 @@ namespace RestaurantApi.Repository
        
     }
 }
+

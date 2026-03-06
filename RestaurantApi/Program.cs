@@ -1,8 +1,9 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using RestaurantApi.Repository;
 using RestaurantApi.Repository.Interface;
 using RestaurantApi.Services;
 using RestaurantApi.Services.Interface;
+using RestaurantApi.Services.Validation;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,6 +19,7 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<IReservaService, ReservaService>();
 builder.Services.AddScoped<IReservaRepository, ReservaRepository>();
+builder.Services.AddScoped<IReservaValidator, ReservaValidator>();
 builder.Services.AddScoped<ICalendarioSemanalService, CalendarioSemanalService>();
 builder.Services.AddScoped<ICalendarioSemanalRepository, CalendarioSemanalRepository>();
 
@@ -29,11 +31,10 @@ builder.Services.AddDbContext<ReservaRestaurantContext>(options =>
 
 var app = builder.Build();
 
-
 app.UseSwagger();
 app.UseSwaggerUI();
 
-// Seed autom�tico (idempotente)
+// Seed automático (idempotente)
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<ReservaRestaurantContext>();

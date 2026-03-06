@@ -1,44 +1,30 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+using RestaurantApi.Domain.Constants;
 using RestaurantApi.Domain.DTO;
 using RestaurantApi.Domain.Entities;
 using RestaurantApi.Repository.Interface;
-using RestaurantApi.Domain.Constants; 
-using System.Text;
-
+using RestaurantApi.Services.Interface;
 
 namespace RestaurantApi.Repository
 {
     public class ReservaRepository : IReservaRepository
     {
         private readonly ReservaRestaurantContext _restaurantContext;
+        private readonly IReservaValidator _validator;
 
-        private ValidacionClasePrueba Validacion;
-
-        private string FormatoFecha = "yyyy/mm/dd";
-
-        private string FechaHoy = DateTime.Now.Date.ToString();
-
-        public ReservaRepository(ReservaRestaurantContext context)
+        public ReservaRepository(ReservaRestaurantContext context, IReservaValidator validator)
         {
             _restaurantContext = context;
-            Validacion = new ValidacionClasePrueba();
-        }
-
-        private DateTime FormatoFechas(string fecha)
-        {
-            var fecharecibida = DateTime.Parse(fecha).Date;
-            var formato = $"{fecharecibida.Year}-{fecharecibida.Month}-{fecharecibida.Day}";
-            return DateTime.Parse(formato);
+            _validator = validator;
         }
 
         public async Task<Respuesta> AddNewReservaAsync(ReservaDTO reserva)
         {
-            // Generación de código único para la reserva
-            Guid id = Guid.NewGuid();
+            var fechaHoy = DateTime.Today;
 
             var newReserva = new Reserva
             {
-                CodReserva = id.ToString(),
+                CodReserva = Guid.NewGuid().ToString(),
                 NombrePersona = reserva.NombrePersona,
                 ApellidoPersona = reserva.ApellidoPersona,
                 Celular = reserva.Celular,
@@ -46,111 +32,88 @@ namespace RestaurantApi.Repository
                 Dni = reserva.Dni,
                 IdRangoReserva = reserva.IdRangoReserva,
                 CantidadPersonas = reserva.CantidadPersonas,
-                FechaReserva = FormatoFechas(reserva.FechaReserva.Date.ToString()),
-                FechaAlta = FormatoFechas(FechaHoy),
-                FechaModificacion = FormatoFechas(FechaHoy),
-                Estado = ""
+                FechaReserva = reserva.FechaReserva.Date,
+                FechaAlta = fechaHoy,
+                FechaModificacion = fechaHoy,
+                Estado = string.Empty
             };
 
-            var ValidacionReserva = await Validacion.ValidacionReservaAsync(newReserva, _restaurantContext);
-
-            if (ValidacionReserva.Estado)
+            var validacionReserva = await _validator.ValidacionReservaAsync(newReserva, _restaurantContext);
+            if (!validacionReserva.Estado)
             {
-                newReserva.Estado = ReservaEstado.Confirmado;
-                await _restaurantContext.Reservas.AddAsync(newReserva);
-
-                int rows = await _restaurantContext.SaveChangesAsync();
-
-                if(rows > 0)
-                {
-                    //La reserva se realizo
-                    return ValidacionReserva;
-                }
-                ValidacionReserva.Estado = false;
-                ValidacionReserva.Mensaje.Clear().Append("Error en la api no se agrego la reserva.");
+                return validacionReserva;
             }
-            //La reserva no se realizo por falta de
-            //cumplir una validacion
-            return ValidacionReserva;
+
+            newReserva.Estado = ReservaEstado.Confirmado;
+            await _restaurantContext.Reservas.AddAsync(newReserva);
+
+            var rows = await _restaurantContext.SaveChangesAsync();
+            if (rows > 0)
+            {
+                return validacionReserva;
+            }
+
+            validacionReserva.Estado = false;
+            validacionReserva.Mensaje.Clear().Append("Error en la api no se agrego la reserva.");
+            return validacionReserva;
         }
 
         public async Task<Respuesta> ModificarNewReservaAsync(ModificacionDTO modificacion)
         {
-            var FechaConsulta = FormatoFechas(modificacion.FechaReserva.ToString());
+            var reservaModificar = await _restaurantContext.Reservas
+                .FirstOrDefaultAsync(r => r.Dni == modificacion.Dni
+                    && r.FechaReserva.Date == modificacion.FechaReserva.Date
+                    && r.IdRangoReserva == modificacion.IdRangoReserva);
 
-            try
+            if (reservaModificar == null)
             {
-                var ReservaModificar = await _restaurantContext.Reservas.
-                    FirstOrDefaultAsync(r => r.Dni == modificacion.Dni
-                    && r.FechaReserva == modificacion.FechaReserva
-                    && r.IdRangoReserva == modificacion.IdRangoReserva
-                    );
-                //Tengo que agregar mas parametros para buscar la reserva y que los datos que se modifican
-                //sean otras propiedades
-                if(ReservaModificar != null )
+                var respuesta = new Respuesta
                 {
-                    ReservaModificar.FechaReserva = FormatoFechas(modificacion.FechaModificacion.ToString());
-                    ReservaModificar.IdRangoReserva = modificacion.IdRangoModificacion;
-                    ReservaModificar.CantidadPersonas = modificacion.CantidadPersonasModificacion;
-                    ReservaModificar.FechaModificacion = FormatoFechas(FechaHoy);
-
-                    var ValidacionModificacion = await Validacion.
-                        ModificacionReservaAsync(ReservaModificar, _restaurantContext);
-
-                    if (ValidacionModificacion.Estado)
-                    {
-
-                        await _restaurantContext.SaveChangesAsync();
-
-                        //La modificacion se realizo
-                        return ValidacionModificacion;
-                    }
-                    //La modificacion no se realizo por falta de
-                    //cumplir una validacion
-                    return ValidacionModificacion;
-                }
-                var respuesta = new Respuesta();
-                respuesta.Estado = false;
+                    Estado = false
+                };
                 respuesta.Mensaje.Clear();
                 respuesta.Mensaje.Append("No se encontro reserva");
                 return respuesta;
             }
-            catch(Exception ex)
+
+            reservaModificar.FechaReserva = (modificacion.FechaModificacion ?? modificacion.FechaReserva).Date;
+            reservaModificar.IdRangoReserva = modificacion.IdRangoModificacion;
+            reservaModificar.CantidadPersonas = modificacion.CantidadPersonasModificacion;
+            reservaModificar.FechaModificacion = DateTime.Today;
+
+            var validacionModificacion = await _validator.ModificacionReservaAsync(reservaModificar, _restaurantContext);
+            if (!validacionModificacion.Estado)
             {
-                var respuesta = new Respuesta();
-                respuesta.Estado = false;
-                respuesta.Mensaje.Clear();
-                respuesta.Mensaje.Append("No se encontro reserva");
-                return respuesta;
+                return validacionModificacion;
             }
-            return null;
+
+            await _restaurantContext.SaveChangesAsync();
+            return validacionModificacion;
         }
 
         public async Task<Respuesta> CancelarNewReservaAsync(CancelarDTO cancelar)
         {
-            //Se bussca reserva para cancelar
-            var ReservaCancelar = await _restaurantContext.Reservas.
-                FirstOrDefaultAsync(r => r.Dni == cancelar.Dni 
-                && r.FechaReserva == cancelar.FechaReserva
-                && r.IdRangoReserva == cancelar.IdRangoReserva
-                && r.Estado == ReservaEstado.Confirmado);
+            var reservaCancelar = await _restaurantContext.Reservas
+                .FirstOrDefaultAsync(r => r.Dni == cancelar.Dni
+                    && r.FechaReserva.Date == cancelar.FechaReserva.Date
+                    && r.IdRangoReserva == cancelar.IdRangoReserva
+                    && r.Estado == ReservaEstado.Confirmado);
 
-            Respuesta respuesta = new Respuesta();
+            var respuesta = new Respuesta();
 
-            if(ReservaCancelar != null)
+            if (reservaCancelar != null)
             {
-                ReservaCancelar.Estado = ReservaEstado.Cancelado;
-
+                reservaCancelar.Estado = ReservaEstado.Cancelado;
                 await _restaurantContext.SaveChangesAsync();
 
                 respuesta.Estado = true;
                 respuesta.Mensaje.Clear();
-                respuesta.Mensaje.Append("Se canceló la reserva.");
+                respuesta.Mensaje.Append("Se cancel� la reserva.");
                 return respuesta;
             }
-            //No se encontro la reserva en la bdd
+
             respuesta.Estado = false;
-            respuesta.Mensaje.Append("No se encontró la reserva.");
+            respuesta.Mensaje.Append("No se encontr� la reserva.");
             return respuesta;
         }
     }
