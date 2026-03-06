@@ -18,36 +18,54 @@ namespace RestaurantApi.Controllers
         public async Task<IActionResult> Semana()
         {
             var result = await _calendarioService.GetSemanaAsync();
-            return Ok(result);
+            return ToCollectionResult(result);
         }
 
         [HttpGet("Cancelados")]
         public async Task<IActionResult> Cancelados()
         {
             var result = await _calendarioService.GetCanceladosAsync();
-            return Ok(result);
+            return ToCollectionResult(result);
         }
 
         [HttpGet("Confirmados")]
         public async Task<IActionResult> Confirmados()
         {
             var result = await _calendarioService.GetConfirmadosAsync();
-            return Ok(result);
+            return ToCollectionResult(result);
         }
 
         [HttpGet("SinCupo")]
         public async Task<IActionResult> SinCupo()
         {
             var result = await _calendarioService.GetSinCupoAsync();
-            return Ok(result);
+            return ToCollectionResult(result);
         }
 
         [HttpGet("DisponibleFecha")]
         public async Task<IActionResult> DisponibleFecha()
         {
             var result = await _calendarioService.GetDisponiblesPorFechaAsync();
+            return ToCollectionResult(result);
+        }
+
+        private IActionResult ToCollectionResult<T>(List<T>? result)
+        {
+            if (result is null)
+            {
+                return Problem(
+                    title: "Data retrieval error",
+                    detail: "No se pudo recuperar la informacion solicitada.",
+                    statusCode: StatusCodes.Status500InternalServerError,
+                    type: "https://httpstatuses.com/500");
+            }
+
+            if (result.Count == 0)
+            {
+                return NoContent();
+            }
+
             return Ok(result);
         }
     }
 }
-

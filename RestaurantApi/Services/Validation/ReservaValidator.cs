@@ -1,121 +1,119 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
+using RestaurantApi.Domain.Common;
 using RestaurantApi.Domain.Constants;
 using RestaurantApi.Domain.Entities;
 using RestaurantApi.Repository;
 using RestaurantApi.Services.Interface;
+using System.Text;
 
 namespace RestaurantApi.Services.Validation
 {
     public class ReservaValidator : IReservaValidator
     {
-        public async Task<Respuesta> ValidacionReservaAsync(
-            Reserva reserva,
-            ReservaRestaurantContext contextrestaurant)
+        private readonly ReservaRestaurantContext _context;
+
+        public ReservaValidator(ReservaRestaurantContext context)
         {
-            var respuestaReserva = new Respuesta();
-
-            if (ValidarCampos(reserva, respuestaReserva) &&
-                ValidarFecha(reserva, respuestaReserva, reserva.FechaAlta) &&
-                await ValidarCantCapacidad(reserva, respuestaReserva, contextrestaurant) &&
-                await ValidCantReserva(reserva, respuestaReserva, contextrestaurant))
-            {
-                respuestaReserva.Mensaje.Clear();
-                respuestaReserva.Mensaje.Append("Se generó la reserva con exito.");
-                return respuestaReserva;
-            }
-
-            return respuestaReserva;
+            _context = context;
         }
 
-        public async Task<Respuesta> ModificacionReservaAsync(
-            Reserva reserva,
-            ReservaRestaurantContext contextrestaurant)
+        public async Task<OperationResult> ValidateReservaAsync(Reserva reserva)
         {
-            var respuestaReserva = new Respuesta();
+            var message = new StringBuilder("Error en el campo: ");
 
-            if (ValidarFecha(reserva, respuestaReserva, reserva.FechaModificacion) &&
-                await ValidarCantCapacidad(reserva, respuestaReserva, contextrestaurant) &&
-                await ValidCantReserva(reserva, respuestaReserva, contextrestaurant))
+            if (ValidarCampos(reserva, message) &&
+                ValidarFecha(reserva, message, reserva.FechaAlta) &&
+                await ValidarCantCapacidad(reserva, message) &&
+                await ValidCantReserva(reserva, message))
             {
-                respuestaReserva.Mensaje.Clear();
-                respuestaReserva.Mensaje.Append("Se modifió la reserva con exito.");
-                return respuestaReserva;
+                return OperationResult.Ok("Se genero la reserva con exito.");
             }
 
-            return respuestaReserva;
+            return OperationResult.Fail(message.ToString());
         }
 
-        private bool ValidarCampos(Reserva reserva, Respuesta respuesta)
+        public async Task<OperationResult> ValidateModificacionAsync(Reserva reserva)
         {
-            if (ValidarCantidadCaracteres(reserva.Dni, 8, nameof(reserva.Dni), respuesta) ||
-                ValidarCantidadCaracteres(reserva.Celular, 20, nameof(reserva.Celular), respuesta) ||
-                ValidarCampo(reserva.NombrePersona, respuesta, nameof(reserva.NombrePersona)) ||
-                ValidarCampo(reserva.ApellidoPersona, respuesta, nameof(reserva.ApellidoPersona)) ||
-                ValidarCampo(reserva.Dni, respuesta, nameof(reserva.Dni)) ||
-                ValidarCampo(reserva.Mail, respuesta, nameof(reserva.Mail)) ||
-                ValidarCampo(reserva.Celular, respuesta, nameof(reserva.Celular)))
+            var message = new StringBuilder("Error en el campo: ");
+
+            if (ValidarFecha(reserva, message, reserva.FechaModificacion) &&
+                await ValidarCantCapacidad(reserva, message) &&
+                await ValidCantReserva(reserva, message))
             {
-                return respuesta.Estado = false;
+                return OperationResult.Ok("Se modifico la reserva con exito.");
             }
 
-            return respuesta.Estado = true;
+            return OperationResult.Fail(message.ToString());
         }
 
-        private bool ValidarCantidadCaracteres(string valor, int cantidad, string campo, Respuesta respuesta)
+        private static bool ValidarCampos(Reserva reserva, StringBuilder message)
+        {
+            if (ValidarCantidadCaracteres(reserva.Dni, 8, nameof(reserva.Dni), message) ||
+                ValidarCantidadCaracteres(reserva.Celular, 20, nameof(reserva.Celular), message) ||
+                ValidarCampo(reserva.NombrePersona, message, nameof(reserva.NombrePersona)) ||
+                ValidarCampo(reserva.ApellidoPersona, message, nameof(reserva.ApellidoPersona)) ||
+                ValidarCampo(reserva.Dni, message, nameof(reserva.Dni)) ||
+                ValidarCampo(reserva.Mail, message, nameof(reserva.Mail)) ||
+                ValidarCampo(reserva.Celular, message, nameof(reserva.Celular)))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool ValidarCantidadCaracteres(string valor, int cantidad, string campo, StringBuilder message)
         {
             if (valor.Length > cantidad)
             {
-                respuesta.Mensaje.Append($"\n{campo} supera los caracteres permitidos: {cantidad}.");
+                message.Append($"\n{campo} supera los caracteres permitidos: {cantidad}.");
                 return true;
             }
 
             return false;
         }
 
-        private bool ValidarCampo(string valor, Respuesta respuesta, string campo)
+        private static bool ValidarCampo(string valor, StringBuilder message, string campo)
         {
             if (string.IsNullOrWhiteSpace(valor))
             {
-                respuesta.Mensaje.Append($"\n{campo}, no tiene datos.");
+                message.Append($"\n{campo}, no tiene datos.");
                 return true;
             }
 
             return false;
         }
 
-        private bool ValidarFecha(Reserva reserva, Respuesta respuesta, DateTime? fechaAlta)
+        private static bool ValidarFecha(Reserva reserva, StringBuilder message, DateTime? fechaBase)
         {
-            var fechaActual = fechaAlta;
+            var fechaActual = fechaBase;
             var fechaReserva = reserva.FechaReserva;
 
             if (fechaActual < fechaReserva)
             {
                 if (fechaActual >= fechaReserva.AddDays(-7))
                 {
-                    return respuesta.Estado = true;
+                    return true;
                 }
 
-                respuesta.Mensaje.Append("\nfecha con mas de 7 dias.");
-                return respuesta.Estado = false;
+                message.Append("\nfecha con mas de 7 dias.");
+                return false;
             }
 
-            respuesta.Mensaje.Append("\nfecha antigua, no se puede reservar.");
-            return respuesta.Estado = false;
+            message.Append("\nfecha antigua, no se puede reservar.");
+            return false;
         }
 
-        private async Task<bool> ValidarCantCapacidad(
-            Reserva reserva,
-            Respuesta respuesta,
-            ReservaRestaurantContext reservacontext)
+        private async Task<bool> ValidarCantCapacidad(Reserva reserva, StringBuilder message)
         {
-            var capacidadRango = await reservacontext.RangoReservas
+            var capacidadRango = await _context.RangoReservas
                 .Where(r => r.IdRangoReserva == reserva.IdRangoReserva)
                 .Select(r => r.Cupo)
                 .FirstOrDefaultAsync();
 
             if (reserva.CantidadPersonas <= capacidadRango)
             {
-                var reservasEnFecha = await reservacontext.Reservas
+                var reservasEnFecha = await _context.Reservas
                     .Where(r => r.IdRangoReserva == reserva.IdRangoReserva
                         && r.FechaReserva.Date == reserva.FechaReserva.Date
                         && r.Estado == ReservaEstado.Confirmado)
@@ -125,23 +123,20 @@ namespace RestaurantApi.Services.Validation
 
                 if (validacionReserva >= 0)
                 {
-                    return respuesta.Estado = true;
+                    return true;
                 }
 
-                respuesta.Mensaje.Append($"\nno hay cantidad disponible en el rango, capacidad disponible: {capacidadRango - reservasEnFecha}.");
-                return respuesta.Estado = false;
+                message.Append($"\nno hay cantidad disponible en el rango, capacidad disponible: {capacidadRango - reservasEnFecha}.");
+                return false;
             }
 
-            respuesta.Mensaje.Append($"\nla cantidad excede {capacidadRango}.");
-            return respuesta.Estado = false;
+            message.Append($"\nla cantidad excede {capacidadRango}.");
+            return false;
         }
 
-        private async Task<bool> ValidCantReserva(
-            Reserva reserva,
-            Respuesta respuesta,
-            ReservaRestaurantContext reservacontext)
+        private async Task<bool> ValidCantReserva(Reserva reserva, StringBuilder message)
         {
-            var cantidadDeReservas = await reservacontext.Reservas
+            var cantidadDeReservas = await _context.Reservas
                 .Where(p => p.NombrePersona == reserva.NombrePersona
                     && p.ApellidoPersona == reserva.ApellidoPersona
                     && p.FechaReserva == reserva.FechaReserva)
@@ -149,11 +144,11 @@ namespace RestaurantApi.Services.Validation
 
             if (cantidadDeReservas == 0)
             {
-                return respuesta.Estado = true;
+                return true;
             }
 
-            respuesta.Mensaje.Append("\nel cliente ya tiene una reserva esa fecha.");
-            return respuesta.Estado = false;
+            message.Append("\nel cliente ya tiene una reserva esa fecha.");
+            return false;
         }
     }
 }

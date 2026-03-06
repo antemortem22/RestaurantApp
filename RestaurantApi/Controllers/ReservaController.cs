@@ -1,5 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using RestaurantApi.Domain.Common;
 using RestaurantApi.Domain.DTO;
 using RestaurantApi.Services.Interface;
 
@@ -9,7 +9,7 @@ namespace RestaurantApi.Controllers
     [ApiController]
     public class ReservaController : ControllerBase
     {
-        private IReservaService _reservaService;
+        private readonly IReservaService _reservaService;
 
         public ReservaController(IReservaService reservaService)
         {
@@ -20,27 +20,39 @@ namespace RestaurantApi.Controllers
         public async Task<IActionResult> AddReserva([FromBody] ReservaDTO request)
         {
             var result = await _reservaService.AddReservaAsync(request);
-            var mensaje = result.Mensaje.ToString();
-            if (result.Estado) return Ok(mensaje);
-            return BadRequest(mensaje);
+            return ToHttpResult(result);
         }
 
         [HttpPost("ModificarReserva")]
         public async Task<IActionResult> ModReserva([FromBody] ModificacionDTO request)
         {
             var result = await _reservaService.ModificarReservaAsync(request);
-            var mensaje = result.Mensaje.ToString();
-            if (result.Estado) return Ok(mensaje);
-            return BadRequest(mensaje);
+            return ToHttpResult(result);
         }
 
         [HttpPost("CancelarReserva")]
-        public async Task<IActionResult> CancelarReserva([FromQuery] CancelarDTO request)
+        public async Task<IActionResult> CancelarReserva([FromBody] CancelarDTO request)
         {
             var result = await _reservaService.CancelarReservaAsync(request);
-            var mensaje = result.Mensaje.ToString();
-            if (result.Estado) return Ok(mensaje);
-            return BadRequest(mensaje);
+            return ToHttpResult(result);
+        }
+
+        private IActionResult ToHttpResult(OperationResult result)
+        {
+            if (result.Success)
+            {
+                return Ok(new ApiMessageResponse
+                {
+                    Success = true,
+                    Message = result.Message
+                });
+            }
+
+            return Problem(
+                title: "Business validation error",
+                detail: result.Message,
+                statusCode: StatusCodes.Status400BadRequest,
+                type: "https://httpstatuses.com/400");
         }
     }
 }

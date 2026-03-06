@@ -1,15 +1,12 @@
-﻿using RestaurantApi.Domain.DTO;
-using RestaurantApi.Domain.Entities;
-using RestaurantApi.Repository;
+﻿using RestaurantApi.Domain.Common;
+using RestaurantApi.Domain.DTO;
 
 namespace RestaurantApi.Services.Interface
 {
     public interface IReservaService
     {
-        public Task<Respuesta> AddReservaAsync(ReservaDTO reserva);
-        public Task<Respuesta> ModificarReservaAsync(ModificacionDTO modificacion);
-
-        public Task<Respuesta> CancelarReservaAsync(CancelarDTO cancelar);
-
+        Task<OperationResult> AddReservaAsync(ReservaDTO reserva);
+        Task<OperationResult> ModificarReservaAsync(ModificacionDTO modificacion);
+        Task<OperationResult> CancelarReservaAsync(CancelarDTO cancelar);
     }
 }

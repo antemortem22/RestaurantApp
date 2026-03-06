@@ -1,11 +1,11 @@
-﻿using RestaurantApi.Domain.Entities;
-using RestaurantApi.Repository;
+﻿using RestaurantApi.Domain.Common;
+using RestaurantApi.Domain.Entities;
 
 namespace RestaurantApi.Services.Interface
 {
     public interface IReservaValidator
     {
-        Task<Respuesta> ValidacionReservaAsync(Reserva reserva, ReservaRestaurantContext contextrestaurant);
-        Task<Respuesta> ModificacionReservaAsync(Reserva reserva, ReservaRestaurantContext contextrestaurant);
+        Task<OperationResult> ValidateReservaAsync(Reserva reserva);
+        Task<OperationResult> ValidateModificacionAsync(Reserva reserva);
     }
 }

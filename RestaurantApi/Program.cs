@@ -23,6 +23,8 @@ builder.Services.AddScoped<IReservaValidator, ReservaValidator>();
 builder.Services.AddScoped<ICalendarioSemanalService, CalendarioSemanalService>();
 builder.Services.AddScoped<ICalendarioSemanalRepository, CalendarioSemanalRepository>();
 
+builder.Services.AddProblemDetails();
+
 var connectionString = builder.Configuration.GetConnectionString("Default")
     ?? throw new InvalidOperationException("Missing connection string: ConnectionStrings:Default");
 
@@ -33,6 +35,7 @@ var app = builder.Build();
 
 app.UseSwagger();
 app.UseSwaggerUI();
+app.UseExceptionHandler();
 
 // Seed automático (idempotente)
 using (var scope = app.Services.CreateScope())
