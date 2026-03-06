@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using RestaurantApi.Repository;
 using RestaurantApi.Repository.Interface;
+using RestaurantApi.Serialization;
 using RestaurantApi.Services;
 using RestaurantApi.Services.Interface;
 using RestaurantApi.Services.Validation;
@@ -12,6 +13,8 @@ builder.Services.AddControllers()
     .AddJsonOptions(o =>
     {
         o.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+        o.JsonSerializerOptions.Converters.Add(new ArgentinaDateTimeJsonConverter());
+        o.JsonSerializerOptions.Converters.Add(new NullableArgentinaDateTimeJsonConverter());
     });
 
 builder.Services.AddEndpointsApiExplorer();

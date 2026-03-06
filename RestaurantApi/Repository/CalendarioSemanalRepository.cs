@@ -1,13 +1,14 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using RestaurantApi.Domain.Constants;
 using RestaurantApi.Domain.Models;
 using RestaurantApi.Repository.Interface;
 using System.Globalization;
-using RestaurantApi.Domain.Constants;
 
 namespace RestaurantApi.Repository
 {
     public class CalendarioSemanalRepository : ICalendarioSemanalRepository
     {
+        private static readonly CultureInfo ArgentineCulture = CultureInfo.GetCultureInfo("es-AR");
         private readonly ReservaRestaurantContext _restaurantContext;
 
         public CalendarioSemanalRepository(ReservaRestaurantContext context)
@@ -18,28 +19,26 @@ namespace RestaurantApi.Repository
         public async Task<List<CalendarioResponse>> GetCalendarioSemanalAsync()
         {
             var fechasProximos7Dias = await ObtenerFechasProximosDiasAsync(7);
-
             var calendario = new List<CalendarioReserva>();
 
             foreach (var fecha in fechasProximos7Dias)
             {
-                var diaSemana = fecha.ToString("dddd", CultureInfo.CurrentCulture);
+                var diaSemana = fecha.ToString("dddd", ArgentineCulture);
 
                 var turnosPorFecha = await _restaurantContext.RangoReservas
-                            .Select(r => new
-                            {
-                                Mensaje = "Calendario:",
-                                r.Descripcion,
-                                CupoTotal = r.Cupo,
-                                ReservasOcupadas = r.Reservas
-                                    .Where(reserva => reserva.FechaReserva.Date == fecha.Date)
-                                    .Sum(reserva => reserva.CantidadPersonas)
-                            })
-                            .ToListAsync();
+                    .Select(r => new
+                    {
+                        r.Descripcion,
+                        CupoTotal = r.Cupo,
+                        ReservasOcupadas = r.Reservas
+                            .Where(reserva => reserva.FechaReserva.Date == fecha.Date)
+                            .Sum(reserva => reserva.CantidadPersonas)
+                    })
+                    .ToListAsync();
 
                 var calendarioReserva = new CalendarioReserva
                 {
-                    Fecha = fecha.ToString("yyyy-MM-dd"),
+                    Fecha = fecha.ToString("dd/MM/yyyy", ArgentineCulture),
                     Dia = diaSemana,
                     Rangos = turnosPorFecha
                         .Select(turno => new RangoReservaCalendario
@@ -66,16 +65,14 @@ namespace RestaurantApi.Repository
             return new List<CalendarioResponse> { calendarioResponse };
         }
 
-
         public async Task<List<CalendarioInfo>> GetCanceladosSemanalAsync()
         {
             var fechasProximos7Dias = await ObtenerFechasProximosDiasAsync(7);
-
             var calendario = new List<CalendarioInfo>();
 
             foreach (var fecha in fechasProximos7Dias)
             {
-                var diaSemana = fecha.ToString("dddd", CultureInfo.CurrentCulture);
+                var diaSemana = fecha.ToString("dddd", ArgentineCulture);
 
                 var turnosCanceladosPorFecha = await _restaurantContext.RangoReservas
                     .SelectMany(r => r.Reservas
@@ -94,7 +91,7 @@ namespace RestaurantApi.Repository
                 {
                     var calendarioInfo = new CalendarioInfo
                     {
-                        Fecha = fecha.ToString("yyyy-MM-dd"),
+                        Fecha = fecha.ToString("dd/MM/yyyy", ArgentineCulture),
                         Dia = diaSemana,
                         Rangos = turnosCanceladosPorFecha
                             .Select(turno => new RangoReservaInfo
@@ -117,12 +114,11 @@ namespace RestaurantApi.Repository
         public async Task<List<CalendarioInfo>> GetConfirmadosSemanalAsync()
         {
             var fechasProximos7Dias = await ObtenerFechasProximosDiasAsync(7);
-
             var calendario = new List<CalendarioInfo>();
 
             foreach (var fecha in fechasProximos7Dias)
             {
-                var diaSemana = fecha.ToString("dddd", CultureInfo.CurrentCulture);
+                var diaSemana = fecha.ToString("dddd", ArgentineCulture);
 
                 var turnosConfirmadosPorFecha = await _restaurantContext.RangoReservas
                     .SelectMany(r => r.Reservas
@@ -141,7 +137,7 @@ namespace RestaurantApi.Repository
                 {
                     var calendarioInfo = new CalendarioInfo
                     {
-                        Fecha = fecha.ToString("yyyy-MM-dd"),
+                        Fecha = fecha.ToString("dd/MM/yyyy", ArgentineCulture),
                         Dia = diaSemana,
                         Rangos = turnosConfirmadosPorFecha
                             .Select(turno => new RangoReservaInfo
@@ -161,16 +157,15 @@ namespace RestaurantApi.Repository
             return calendario;
         }
 
-
         public async Task<List<ListaTurnoInfo>> GetTurnosSinCupoAsync()
         {
             var fechasProximos7Dias = await ObtenerFechasProximosDiasAsync(7);
-
             var turnosSinCupo = new List<ListaTurnoInfo>();
 
             foreach (var fecha in fechasProximos7Dias)
             {
-                var diaSemana = fecha.ToString("dddd", CultureInfo.CurrentCulture);
+                var diaSemana = fecha.ToString("dddd", ArgentineCulture);
+
                 var turnosPorFecha = await _restaurantContext.RangoReservas
                     .Select(r => new
                     {
@@ -186,7 +181,7 @@ namespace RestaurantApi.Repository
                     .Where(turno => turno.ReservasOcupadas >= turno.CupoTotal)
                     .Select(turno => new ListaTurnoInfo
                     {
-                        Fecha = fecha.ToString("yyyy-MM-dd"),
+                        Fecha = fecha.ToString("dd/MM/yyyy", ArgentineCulture),
                         Dia = diaSemana,
                         Rangos = new List<TurnoInfo>
                         {
@@ -210,12 +205,11 @@ namespace RestaurantApi.Repository
         public async Task<List<ListaTurnoInfo>> GetTurnosDisponiblesPorFechaAsync()
         {
             var fechasProximos7Dias = await ObtenerFechasProximosDiasAsync(7);
-
             var turnosDisponibles = new List<ListaTurnoInfo>();
 
             foreach (var fecha in fechasProximos7Dias)
             {
-                var diaSemana = fecha.ToString("dddd", CultureInfo.CurrentCulture);
+                var diaSemana = fecha.ToString("dddd", ArgentineCulture);
 
                 var turnosPorFecha = await _restaurantContext.RangoReservas
                     .Select(r => new
@@ -232,7 +226,7 @@ namespace RestaurantApi.Repository
                     .Where(turno => turno.ReservasOcupadas < turno.CupoTotal)
                     .Select(turno => new ListaTurnoInfo
                     {
-                        Fecha = fecha.ToString("yyyy-MM-dd"),
+                        Fecha = fecha.ToString("dd/MM/yyyy", ArgentineCulture),
                         Dia = diaSemana,
                         Rangos = new List<TurnoInfo>
                         {
@@ -252,18 +246,13 @@ namespace RestaurantApi.Repository
 
             return turnosDisponibles;
         }
-        // Genera una ventana de fechas desde hoy para reutilizar en consultas semanales.
-        private async Task<List<DateTime>> ObtenerFechasProximosDiasAsync(int dias)
-        {
-            return await Task.Run(() =>
-            {
-                return Enumerable.Range(0, dias)
-                    .Select(i => DateTime.Now.Date.AddDays(i))
-                    .ToList();
-            });
-        }
 
-       
+        // Genera una ventana de fechas desde hoy para reutilizar en consultas semanales.
+        private static async Task<List<DateTime>> ObtenerFechasProximosDiasAsync(int dias)
+        {
+            return await Task.Run(() => Enumerable.Range(0, dias)
+                .Select(i => DateTime.Now.Date.AddDays(i))
+                .ToList());
+        }
     }
 }
-
