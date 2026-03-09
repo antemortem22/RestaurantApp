@@ -1,10 +1,12 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using RestaurantApi.Services.Interface;
 
 namespace RestaurantApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [EnableRateLimiting("public-read")]
     public class CalendarioSemanalController : ControllerBase
     {
         private readonly ICalendarioSemanalService _calendarioService;

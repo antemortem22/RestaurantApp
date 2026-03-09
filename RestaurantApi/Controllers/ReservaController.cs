@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using RestaurantApi.Domain.Common;
 using RestaurantApi.Domain.DTO;
 using RestaurantApi.Services.Interface;
@@ -8,6 +9,7 @@ namespace RestaurantApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [EnableRateLimiting("manage-write")]
     public class ReservaController : ControllerBase
     {
         private readonly IReservaService _reservaService;

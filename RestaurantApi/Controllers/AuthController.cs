@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using RestaurantApi.Domain.DTO;
 using RestaurantApi.Services.Interface;
 
@@ -6,6 +7,7 @@ namespace RestaurantApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [EnableRateLimiting("manage-write")]
     public class AuthController : ControllerBase
     {
         private readonly IJwTokenService _jwTokenService;

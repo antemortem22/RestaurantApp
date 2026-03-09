@@ -10,6 +10,9 @@ using RestaurantApi.Services.Security;
 using RestaurantApi.Services.Validation;
 using System.Text;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.RateLimiting;
+using System.Threading.RateLimiting;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -47,6 +50,28 @@ builder.Services.AddAuthorization(options =>
         policy.RequireRole("Mesero"));
 });
 
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    options.AddFixedWindowLimiter("public-read", cfg =>
+    {
+        cfg.PermitLimit = 60; // 60 requests
+        cfg.Window = TimeSpan.FromMinutes(1); // por minuto
+        cfg.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        cfg.QueueLimit = 0; // sin cola
+    });
+
+    options.AddFixedWindowLimiter("manage-write", cfg =>
+    {
+        cfg.PermitLimit = 20; // más estricto para escrituras
+        cfg.Window = TimeSpan.FromMinutes(1);
+        cfg.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        cfg.QueueLimit = 0;
+    });
+});
+
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -81,6 +106,7 @@ using (var scope = app.Services.CreateScope())
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 app.MapControllers();
 
 app.Run();
