@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using RestaurantApi.Domain.Common;
 using RestaurantApi.Domain.DTO;
 using RestaurantApi.Services.Interface;
@@ -16,6 +17,7 @@ namespace RestaurantApi.Controllers
             _reservaService = reservaService;
         }
 
+        [Authorize(Policy = "CanManageReservas")]
         [HttpPost("RealizarReserva")]
         public async Task<IActionResult> AddReserva([FromBody] ReservaDTO request)
         {
@@ -23,14 +25,16 @@ namespace RestaurantApi.Controllers
             return ToHttpResult(result);
         }
 
-        [HttpPost("ModificarReserva")]
+        [Authorize(Policy = "CanManageReservas")]
+        [HttpPut("ModificarReserva")]
         public async Task<IActionResult> ModReserva([FromBody] ModificacionDTO request)
         {
             var result = await _reservaService.ModificarReservaAsync(request);
             return ToHttpResult(result);
         }
 
-        [HttpPost("CancelarReserva")]
+        [Authorize(Policy = "CanManageReservas")]
+        [HttpDelete("CancelarReserva")]
         public async Task<IActionResult> CancelarReserva([FromBody] CancelarDTO request)
         {
             var result = await _reservaService.CancelarReservaAsync(request);
