@@ -1,48 +1,55 @@
-﻿using RestaurantApi.Domain.Models;
+﻿using Microsoft.Extensions.Caching.Memory;
+using RestaurantApi.Domain.Models;
 using RestaurantApi.Repository.Interface;
+using RestaurantApi.Services.Cache;
 using RestaurantApi.Services.Interface;
 
 namespace RestaurantApi.Services
 {
     public class CalendarioSemanalService : ICalendarioSemanalService
     {
-        ICalendarioSemanalRepository _repository;
+        private static readonly TimeSpan CacheTtl = TimeSpan.FromSeconds(45);
 
-        public CalendarioSemanalService(ICalendarioSemanalRepository repository)
+        private readonly ICalendarioSemanalRepository _repository;
+        private readonly IMemoryCache _cache;
+
+        public CalendarioSemanalService(ICalendarioSemanalRepository repository, IMemoryCache cache)
         {
             _repository = repository;
+            _cache = cache;
         }
 
-        public async Task<List<CalendarioResponse>> GetSemanaAsync()
+        public Task<List<CalendarioResponse>> GetSemanaAsync() =>
+            GetOrCreateAsync(CalendarioCacheKeys.Semana, () => _repository.GetCalendarioSemanalAsync());
+
+        public Task<List<CalendarioInfo>> GetCanceladosAsync() =>
+            GetOrCreateAsync(CalendarioCacheKeys.Cancelados, () => _repository.GetCanceladosSemanalAsync());
+
+        public Task<List<CalendarioInfo>> GetConfirmadosAsync() =>
+            GetOrCreateAsync(CalendarioCacheKeys.Confirmados, () => _repository.GetConfirmadosSemanalAsync());
+
+        public Task<List<ListaTurnoInfo>> GetSinCupoAsync() =>
+            GetOrCreateAsync(CalendarioCacheKeys.SinCupo, () => _repository.GetTurnosSinCupoAsync());
+
+        public Task<List<ListaTurnoInfo>> GetDisponiblesPorFechaAsync() =>
+            GetOrCreateAsync(CalendarioCacheKeys.DisponibleFecha, () => _repository.GetTurnosDisponiblesPorFechaAsync());
+
+        private async Task<List<T>> GetOrCreateAsync<T>(string key, Func<Task<List<T>>> factory)
         {
-            var result = await _repository.GetCalendarioSemanalAsync();
+            if (_cache.TryGetValue(key, out List<T>? cached) && cached is not null)
+            {
+                return cached;
+            }
 
-            return result;
+            var data = await factory();
+
+            var options = new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = CacheTtl
+            };
+
+            _cache.Set(key, data, options);
+            return data;
         }
-        public async Task<List<CalendarioInfo>> GetCanceladosAsync() 
-        {
-            var result = await _repository.GetCanceladosSemanalAsync();
-
-            return result;
-        }
-        public async Task<List<CalendarioInfo>> GetConfirmadosAsync() 
-        {
-            var result = await _repository.GetConfirmadosSemanalAsync();
-
-            return result;
-        }
-        public async Task<List<ListaTurnoInfo>> GetSinCupoAsync() 
-        {
-            var result = await _repository.GetTurnosSinCupoAsync();
-
-            return result;
-        }
-        public async Task<List<ListaTurnoInfo>> GetDisponiblesPorFechaAsync()
-        {
-            var result = await _repository.GetTurnosDisponiblesPorFechaAsync();
-
-            return result;
-        }
-
     }
 }

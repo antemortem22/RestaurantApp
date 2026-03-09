@@ -1,9 +1,12 @@
-﻿using RestaurantApi.Domain.Common;
+using RestaurantApi.Domain.Common;
 using RestaurantApi.Domain.Constants;
 using RestaurantApi.Domain.DTO;
 using RestaurantApi.Domain.Entities;
 using RestaurantApi.Repository.Interface;
 using RestaurantApi.Services.Interface;
+using Microsoft.Extensions.Caching.Memory;
+using RestaurantApi.Services.Cache;
+
 
 namespace RestaurantApi.Services
 {
@@ -11,12 +14,15 @@ namespace RestaurantApi.Services
     {
         private readonly IReservaRepository _repository;
         private readonly IReservaValidator _validator;
+        private readonly IMemoryCache _cache;
 
-        public ReservaService(IReservaRepository repository, IReservaValidator validator)
+        public ReservaService(IReservaRepository repository, IReservaValidator validator, IMemoryCache cache)
         {
             _repository = repository;
             _validator = validator;
+            _cache = cache;
         }
+
 
         public async Task<OperationResult> AddReservaAsync(ReservaDTO reserva)
         {
@@ -53,6 +59,7 @@ namespace RestaurantApi.Services
                 return OperationResult.Fail("Error en la api: no se agrego la reserva.");
             }
 
+            InvalidateCalendarioCache();
             return validation;
         }
 
@@ -85,6 +92,7 @@ namespace RestaurantApi.Services
                 return OperationResult.Fail("Error en la api: no se guardo la modificacion.");
             }
 
+            InvalidateCalendarioCache();
             return validation;
         }
 
@@ -108,7 +116,17 @@ namespace RestaurantApi.Services
                 return OperationResult.Fail("Error en la api: no se pudo cancelar la reserva.");
             }
 
+            InvalidateCalendarioCache();
             return OperationResult.Ok("Se cancelo la reserva.");
+        }
+
+        private void InvalidateCalendarioCache()
+        {
+            _cache.Remove(CalendarioCacheKeys.Semana);
+            _cache.Remove(CalendarioCacheKeys.Cancelados);
+            _cache.Remove(CalendarioCacheKeys.Confirmados);
+            _cache.Remove(CalendarioCacheKeys.SinCupo);
+            _cache.Remove(CalendarioCacheKeys.DisponibleFecha);
         }
     }
 }
