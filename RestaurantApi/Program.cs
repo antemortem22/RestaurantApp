@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Microsoft.AspNetCore.Mvc;
 using RestaurantApi.Repository;
 using RestaurantApi.Repository.Interface;
 using RestaurantApi.Serialization;
@@ -42,6 +43,37 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidAudience = jwtAudience,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
             ClockSkew = TimeSpan.Zero
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnChallenge = async context =>
+            {
+                context.HandleResponse();
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                context.Response.ContentType = "application/problem+json";
+
+                await context.Response.WriteAsJsonAsync(new ProblemDetails
+                {
+                    Title = "Unauthorized",
+                    Detail = "Debes autenticarte con un token Bearer valido.",
+                    Status = StatusCodes.Status401Unauthorized,
+                    Type = "https://httpstatuses.com/401"
+                });
+            },
+            OnForbidden = async context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                context.Response.ContentType = "application/problem+json";
+
+                await context.Response.WriteAsJsonAsync(new ProblemDetails
+                {
+                    Title = "Forbidden",
+                    Detail = "No tenes permisos para realizar esta accion.",
+                    Status = StatusCodes.Status403Forbidden,
+                    Type = "https://httpstatuses.com/403"
+                });
+            }
         };
     });
 

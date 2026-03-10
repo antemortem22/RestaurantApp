@@ -21,6 +21,11 @@ namespace RestaurantApi.Controllers
 
         [Authorize(Policy = "CanManageReservas")]
         [HttpPost("RealizarReserva")]
+        [ProducesResponseType(typeof(ApiMessageResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
         public async Task<IActionResult> AddReserva([FromBody] ReservaDTO request)
         {
             var result = await _reservaService.AddReservaAsync(request);
@@ -29,6 +34,11 @@ namespace RestaurantApi.Controllers
 
         [Authorize(Policy = "CanManageReservas")]
         [HttpPut("ModificarReserva")]
+        [ProducesResponseType(typeof(ApiMessageResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
         public async Task<IActionResult> ModReserva([FromBody] ModificacionDTO request)
         {
             var result = await _reservaService.ModificarReservaAsync(request);
@@ -37,6 +47,11 @@ namespace RestaurantApi.Controllers
 
         [Authorize(Policy = "CanManageReservas")]
         [HttpDelete("CancelarReserva")]
+        [ProducesResponseType(typeof(ApiMessageResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
         public async Task<IActionResult> CancelarReserva([FromBody] CancelarDTO request)
         {
             var result = await _reservaService.CancelarReservaAsync(request);
