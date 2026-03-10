@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using RestaurantApi.Repository;
 using RestaurantApi.Repository.Interface;
 using RestaurantApi.Serialization;
@@ -8,11 +10,10 @@ using RestaurantApi.Services;
 using RestaurantApi.Services.Interface;
 using RestaurantApi.Services.Security;
 using RestaurantApi.Services.Validation;
+using RestaurantApi.Swagger;
 using System.Text;
 using System.Text.Json.Serialization;
-using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
-
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -64,7 +65,7 @@ builder.Services.AddRateLimiter(options =>
 
     options.AddFixedWindowLimiter("manage-write", cfg =>
     {
-        cfg.PermitLimit = 20; // más estricto para escrituras
+        cfg.PermitLimit = 20; // mas estricto para escrituras
         cfg.Window = TimeSpan.FromMinutes(1);
         cfg.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
         cfg.QueueLimit = 0;
@@ -74,7 +75,32 @@ builder.Services.AddRateLimiter(options =>
 builder.Services.AddMemoryCache();
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    var securityScheme = new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Description = "Ingrese: Bearer {token}",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        Reference = new OpenApiReference
+        {
+            Type = ReferenceType.SecurityScheme,
+            Id = JwtBearerDefaults.AuthenticationScheme
+        }
+    };
+
+    options.AddSecurityDefinition(JwtBearerDefaults.AuthenticationScheme, securityScheme);
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        { securityScheme, Array.Empty<string>() }
+    });
+
+    options.SchemaFilter<DtoExamplesSchemaFilter>();
+});
 
 builder.Services.AddScoped<IReservaService, ReservaService>();
 builder.Services.AddScoped<IReservaRepository, ReservaRepository>();
@@ -97,7 +123,7 @@ app.UseSwagger();
 app.UseSwaggerUI();
 app.UseExceptionHandler();
 
-// Seed automático (idempotente)
+// Seed automatico (idempotente)
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<ReservaRestaurantContext>();

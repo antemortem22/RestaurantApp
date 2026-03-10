@@ -1,13 +1,15 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
+
 namespace RestaurantApi.Domain.DTO
 {
     public class CancelarDTO
     {
-        [Required, RegularExpression(@"^\d{7,8}$")]
+        [Required, RegularExpression(@"^\d{7,8}$", ErrorMessage = "El DNI debe tener 7 u 8 digitos numericos.")]
         public string Dni { get; set; } = string.Empty;
+
         public DateTime FechaReserva { get; set; }
 
-        [Range(1, int.MaxValue, ErrorMessage = "El IdRangoReserva debe ser mayor o igual a 1.")]
+        [Range(1, 3, ErrorMessage = "El IdRangoReserva debe ser 1 (Almuerzo), 2 (Merienda) o 3 (Cena).")]
         public int IdRangoReserva { get; set; }
     }
 }
