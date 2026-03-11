@@ -191,6 +191,9 @@ Si aparece popup de confianza del certificado ASP.NET Core, aceptarlo para desar
 ### 3) Error de fecha invalida
 La API espera `dd/MM/yyyy` en campos fecha de DTOs de reserva.
 
+### 4) Error CORS por puerto
+- Si cambia el puerto de Blazor, actualizar WithOrigins(...) en Program.cs de la solucion `RestaurantApi`.
+
 ## Reset DB (opcional)
 ```bash
 dotnet tool run dotnet-ef database drop -p RestaurantApi -s RestaurantApi -f
