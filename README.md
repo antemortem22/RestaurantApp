@@ -143,6 +143,19 @@ Pasos en Swagger:
 - Policy `public-read`: 60 req/min
 - Policy `manage-write`: 20 req/min
 
+#### Test Rate Limiting
+- En Blazor, abrir `/calendario`
+- Abrir DevTools -> Consola
+- Pegar:
+
+```js
+(async () => {
+  for (let i = 0; i < 70; i++) {
+    const r = await fetch("https://localhost:7198/api/CalendarioSemanal/Calendario");
+    console.log(i + 1, r.status);
+  }
+})();
+```
 ### Cache
 - `IMemoryCache` en lecturas de calendario
 - TTL corto: 45 segundos
@@ -167,21 +180,15 @@ Notas:
 - Si no hay login, `Reservas` muestra mensaje y link rapido a `/login`
 
 ## Troubleshooting
-### 1) Error de build MSB3021/MSB3027 (archivo en uso)
-Si la app esta corriendo, puede bloquear `RestaurantApi.exe` o `RestaurantBlazor.exe`.
-
-Solucion:
-- detener ejecucion (`Ctrl+C` / `Shift+F5`), luego recompilar
-
-### 2) Certificado HTTPS local
+### 1) Certificado HTTPS local
 Si aparece popup de confianza del certificado ASP.NET Core, aceptarlo para desarrollo.
 
-### 3) La DB no aparece en SSMS
+### 2) La DB no aparece en SSMS
 - Verificar que SSMS este conectado a la misma instancia del connection string
 - Refrescar `Databases`
 - Confirmar que `dotnet ef database update` corrio sin errores
 
-### 4) Error de fecha invalida
+### 3) Error de fecha invalida
 La API espera `dd/MM/yyyy` en campos fecha de DTOs de reserva.
 
 ## Reset DB (opcional)
@@ -190,8 +197,7 @@ dotnet tool run dotnet-ef database drop -p RestaurantApi -s RestaurantApi -f
 dotnet tool run dotnet-ef database update -p RestaurantApi -s RestaurantApi
 ```
 
-## Ideas de mejora (post challenge)
+## Decisiones tecnicas que me hubiera gustado aplicar.
 - Agregar `id_reserva` (int identity) como PK tecnica y mantener `cod_reserva` como codigo de negocio unico
 - Persistencia de sesion Blazor (session/local storage)
 - Refresh token
-- Tests de integracion automatizados
