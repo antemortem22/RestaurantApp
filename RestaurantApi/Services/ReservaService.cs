@@ -30,7 +30,7 @@ namespace RestaurantApi.Services
 
             var newReserva = new Reserva
             {
-                CodReserva = Guid.NewGuid().ToString(),
+                CodReserva = GenerateReservationCode(),
                 NombrePersona = reserva.NombrePersona,
                 ApellidoPersona = reserva.ApellidoPersona,
                 Celular = reserva.Celular,
@@ -127,6 +127,11 @@ namespace RestaurantApi.Services
             _cache.Remove(CalendarioCacheKeys.Confirmados);
             _cache.Remove(CalendarioCacheKeys.SinCupo);
             _cache.Remove(CalendarioCacheKeys.DisponibleFecha);
+        }
+
+        private static string GenerateReservationCode()
+        {
+            return $"R-{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}";
         }
     }
 }
