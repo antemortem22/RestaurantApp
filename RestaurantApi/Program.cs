@@ -105,6 +105,13 @@ builder.Services.AddRateLimiter(options =>
 });
 
 builder.Services.AddMemoryCache();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("blazor-ui", policy =>
+        policy.WithOrigins("https://localhost:7105", "http://localhost:5261")
+            .AllowAnyHeader()
+            .AllowAnyMethod());
+});
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -163,6 +170,7 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.UseHttpsRedirection();
+app.UseCors("blazor-ui");
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
