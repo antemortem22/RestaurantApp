@@ -1,0 +1,76 @@
+﻿@page "/calendario"
+@rendermode InteractiveServer
+@inject CalendarioApiService CalendarioApi
+
+<PageTitle>Calendario</PageTitle>
+
+<h1>Calendario semanal</h1>
+<button class="btn btn-secondary mb-3" @onclick="Load">Recargar</button>
+
+@if (loading)
+{
+    <p>Cargando...</p>
+}
+else if (!string.IsNullOrWhiteSpace(error))
+{
+    <p class="text-danger">@error</p>
+}
+else if (data.Count == 0)
+{
+    <p>Sin datos.</p>
+}
+else
+{
+    @foreach (var bloque in data)
+    {
+        foreach (var dia in bloque.Calendarios)
+        {
+            <h5>@dia.Dia - @dia.Fecha</h5>
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Rango</th>
+                        <th>Ocupados</th>
+                        <th>Libres</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in dia.Rangos)
+                    {
+                        <tr>
+                            <td>@r.Rango</td>
+                            <td>@r.Reserva.Ocupados</td>
+                            <td>@r.Reserva.Libres</td>
+                            <td>@r.Reserva.TotalCupos</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    }
+}
+
+@code {
+    private bool loading;
+    private string error = string.Empty;
+    private List<CalendarioResponseDto> data = new();
+
+    protected override async Task OnInitializedAsync() => await Load();
+
+    private async Task Load()
+    {
+        loading = true;
+        error = string.Empty;
+        var result = await CalendarioApi.GetSemanaAsync();
+        loading = false;
+
+        if (!result.Ok)
+        {
+            error = result.Message;
+            return;
+        }
+
+        data = result.Data;
+    }
+}

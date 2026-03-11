@@ -1,0 +1,127 @@
+@page "/reservas"
+@rendermode InteractiveServer
+@inject AuthSession Session
+@inject ReservaApiService ReservaApi
+@inject NavigationManager Nav
+
+<PageTitle>Reservas</PageTitle>
+
+<h1>Gestion de reservas</h1>
+
+@if (!Session.IsAuthenticated)
+{
+    <div class="alert alert-warning d-flex justify-content-between align-items-center" role="alert">
+        <div>Para crear, modificar o cancelar reservas primero debes iniciar sesion.</div>
+        <button class="btn btn-sm btn-outline-dark" @onclick='() => Nav.NavigateTo("/login")'>Ir a Login</button>
+    </div>
+}
+else
+{
+    <h4>Alta</h4>
+    <div class="row g-2 mb-2">
+        <div class="col"><label class="form-label">Nombre</label><input class="form-control" @bind="_alta.NombrePersona" /></div>
+        <div class="col"><label class="form-label">Apellido</label><input class="form-control" @bind="_alta.ApellidoPersona" /></div>
+        <div class="col"><label class="form-label">DNI</label><input class="form-control" @bind="_alta.Dni" /></div>
+    </div>
+    <div class="row g-2 mb-2">
+        <div class="col"><label class="form-label">Mail</label><input class="form-control" @bind="_alta.Mail" /></div>
+        <div class="col"><label class="form-label">Celular</label><input class="form-control" @bind="_alta.Celular" /></div>
+        <div class="col"><label class="form-label">Fecha (dd/MM/yyyy)</label><input class="form-control" placeholder="15/03/2026" @bind="_alta.FechaReserva" /></div>
+    </div>
+    <div class="row g-2 mb-3">
+        <div class="col">
+            <label class="form-label">Turno</label>
+            <select class="form-select" @bind="_alta.IdRangoReserva">
+                <option value="1">1 - Almuerzo</option>
+                <option value="2">2 - Merienda</option>
+                <option value="3">3 - Cena</option>
+            </select>
+        </div>
+        <div class="col">
+            <label class="form-label">Cantidad de personas</label>
+            <input class="form-control" type="number" min="1" max="50" @bind="_alta.CantidadPersonas" />
+        </div>
+        <div class="col d-flex align-items-end"><button class="btn btn-primary w-100" @onclick="Crear">Crear</button></div>
+    </div>
+
+    <h4>Modificar</h4>
+    <div class="row g-2 mb-2">
+        <div class="col"><label class="form-label">DNI</label><input class="form-control" @bind="_mod.Dni" /></div>
+        <div class="col"><label class="form-label">Fecha original (dd/MM/yyyy)</label><input class="form-control" placeholder="15/03/2026" @bind="_mod.FechaReserva" /></div>
+        <div class="col">
+            <label class="form-label">Turno original</label>
+            <select class="form-select" @bind="_mod.IdRangoReserva">
+                <option value="1">1 - Almuerzo</option>
+                <option value="2">2 - Merienda</option>
+                <option value="3">3 - Cena</option>
+            </select>
+        </div>
+    </div>
+    <div class="row g-2 mb-3">
+        <div class="col"><label class="form-label">Nueva fecha (dd/MM/yyyy)</label><input class="form-control" placeholder="16/03/2026" @bind="_mod.FechaModificacion" /></div>
+        <div class="col">
+            <label class="form-label">Nuevo turno</label>
+            <select class="form-select" @bind="_mod.IdRangoModificacion">
+                <option value="1">1 - Almuerzo</option>
+                <option value="2">2 - Merienda</option>
+                <option value="3">3 - Cena</option>
+            </select>
+        </div>
+        <div class="col">
+            <label class="form-label">Nueva cantidad de personas</label>
+            <input class="form-control" type="number" min="1" max="50" @bind="_mod.CantidadPersonasModificacion" />
+        </div>
+        <div class="col d-flex align-items-end"><button class="btn btn-warning w-100" @onclick="Modificar">Modificar</button></div>
+    </div>
+
+    <h4>Cancelar</h4>
+    <div class="row g-2 mb-3">
+        <div class="col"><label class="form-label">DNI</label><input class="form-control" @bind="_cancelar.Dni" /></div>
+        <div class="col"><label class="form-label">Fecha (dd/MM/yyyy)</label><input class="form-control" placeholder="16/03/2026" @bind="_cancelar.FechaReserva" /></div>
+        <div class="col">
+            <label class="form-label">Turno</label>
+            <select class="form-select" @bind="_cancelar.IdRangoReserva">
+                <option value="1">1 - Almuerzo</option>
+                <option value="2">2 - Merienda</option>
+                <option value="3">3 - Cena</option>
+            </select>
+        </div>
+        <div class="col d-flex align-items-end"><button class="btn btn-danger w-100" @onclick="Cancelar">Cancelar</button></div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(resultMessage))
+    {
+        <div class="alert @(lastOk ? "alert-success" : "alert-danger")">
+            @resultMessage
+        </div>
+    }
+}
+
+@code {
+    private ReservaRequestDto _alta = new();
+    private ModificacionRequestDto _mod = new();
+    private CancelarRequestDto _cancelar = new();
+    private string resultMessage = string.Empty;
+    private bool lastOk;
+
+    private async Task Crear()
+    {
+        var result = await ReservaApi.CrearAsync(_alta);
+        lastOk = result.Ok;
+        resultMessage = result.Message;
+    }
+
+    private async Task Modificar()
+    {
+        var result = await ReservaApi.ModificarAsync(_mod);
+        lastOk = result.Ok;
+        resultMessage = result.Message;
+    }
+
+    private async Task Cancelar()
+    {
+        var result = await ReservaApi.CancelarAsync(_cancelar);
+        lastOk = result.Ok;
+        resultMessage = result.Message;
+    }
+}

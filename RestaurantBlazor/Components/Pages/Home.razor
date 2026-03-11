@@ -1,0 +1,35 @@
+@page "/"
+@rendermode InteractiveServer
+@inject NavigationManager Nav
+@inject AuthSession Session
+
+<PageTitle>Panel</PageTitle>
+
+<div class="home-wrap">
+    <h1>Panel de Reservas</h1>
+    <p class="muted">Vista funcional para operar el challenge.</p>
+
+    <div class="status-card">
+        <strong>Estado de sesion:</strong>
+        @if (Session.IsAuthenticated)
+        {
+            <span class="ok"> Activa (@Session.Role) - vence: @Session.ExpiresAt</span>
+        }
+        else
+        {
+            <span class="warn"> Sin sesion (solo lectura disponible)</span>
+        }
+    </div>
+
+    <div class="grid">
+        <button class="action" @onclick='() => Nav.NavigateTo("/calendario")'>
+            Ver calendario y cupos
+        </button>
+        <button class="action" @onclick='() => Nav.NavigateTo("/login")'>
+            Iniciar sesion (mesero)
+        </button>
+        <button class="action" @onclick='() => Nav.NavigateTo("/reservas")'>
+            Gestionar reservas
+        </button>
+    </div>
+</div>

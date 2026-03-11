@@ -1,0 +1,44 @@
+.home-wrap {
+    max-width: 900px;
+}
+
+.muted {
+    color: #5f6b7a;
+    margin-bottom: 1rem;
+}
+
+.status-card {
+    border: 1px solid #d9dee6;
+    background: #f8fafc;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+}
+
+.ok {
+    color: #0f766e;
+}
+
+.warn {
+    color: #b45309;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+}
+
+.action {
+    border: 1px solid #c7d2e0;
+    border-radius: 10px;
+    padding: 14px;
+    background: white;
+    text-align: left;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.action:hover {
+    background: #f3f7ff;
+}
